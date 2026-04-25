@@ -12,6 +12,7 @@ import javafx.stage.Stage;
 import javafx.util.Duration;
 
 import java.util.Collections;
+import java.util.Objects;
 
 /**
  * Main application class for the Card Game.
@@ -93,20 +94,34 @@ public class Main extends Application {
         game.eventBus.subscribe(new UIObserver(game, this));
     }
 
-    private void startGame() {
-        resetPlayerDeck();
-        drawHand();
+  private void startGame() {
+    resetPlayerDeck();
+    drawHand();
 
-        BorderPane root = new BorderPane();
-        root.setTop(createTopPanel());
-        root.setLeft(createLeftPanel());
-        root.setRight(createRightPanel());
-        root.setCenter(createCenterPanel());
-        root.setBottom(createBottomPanel());
+    Image bgImage = new Image(
+        Objects.requireNonNull(
+            getClass().getResource("/assets/game_background_4.png")
+        ).toExternalForm()
+    );
 
-        setScene(root);
-        updateUI();
-    }
+    ImageView background = new ImageView(bgImage);
+    background.setFitWidth(Screen.getPrimary().getVisualBounds().getWidth());
+    background.setFitHeight(Screen.getPrimary().getVisualBounds().getHeight());
+    background.setPreserveRatio(false);
+
+    BorderPane ui = new BorderPane();
+    ui.setTop(createTopPanel());
+    ui.setLeft(createLeftPanel());
+    ui.setRight(createRightPanel());
+    ui.setCenter(createCenterPanel());
+    ui.setBottom(createBottomPanel());
+
+    StackPane root = new StackPane();
+    root.getChildren().addAll(background, ui); // 👈 SADECE UI
+
+    setScene(root);
+    updateUI();
+}
 
     private void setScene(Pane root) {
         Scene scene = new Scene(root,
