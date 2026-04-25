@@ -1,5 +1,5 @@
 package com.koray;
-
+ 
 class MaxHpRelic extends RelicItem {
     private int amount;
  
@@ -12,8 +12,7 @@ class MaxHpRelic extends RelicItem {
  
     @Override
     public void applyOnBuy(Player player, Game game) {
-        player.maxhp += amount;
-        player.hp    += amount; // anında da dolar
-        if (player.hp > player.maxhp) player.hp = player.maxhp;
+        player.increaseMaxHp(amount);
     }
 }
+ 

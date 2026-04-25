@@ -1,25 +1,31 @@
 package com.koray;
 
 public class Enemy {
-    int hp = 50;
-    int attackDamage = 10;
-    boolean isBoss = false;
-    String name = "Enemy";
- 
-    public void attack(Player player) {
-        dealDamage(player, attackDamage);
+
+    private int     hp           = 50;
+    private int     attackDamage = 10;
+    private boolean boss         = false;
+    private String  name         = "Enemy";
+
+    // ── Getters ─────────────────────────────────────────────
+    public int     getHp()           { return hp; }
+    public int     getAttackDamage() { return attackDamage; }
+    public boolean isBoss()          { return boss; }
+    public String  getName()         { return name; }
+    public boolean isAlive()         { return hp > 0; }
+
+    // ── Package-private setters (EnemyFactory kullanır) ─────
+    void setHp(int hp)                   { this.hp = hp; }
+    void setAttackDamage(int dmg)        { this.attackDamage = dmg; }
+    void setBoss(boolean boss)           { this.boss = boss; }
+    void setName(String name)            { this.name = name; }
+
+    // ── Savaş ───────────────────────────────────────────────
+    public void takeDamage(int dmg) {
+        if (dmg > 0) hp -= dmg;
     }
- 
-    // Boss ve alt sınıflar da kullanabilsin diye yardımcı metod
-    protected void dealDamage(Player player, int dmg) {
-        if (player.shield > 0) {
-            player.shield -= dmg;
-            if (player.shield < 0) {
-                player.hp += player.shield;
-                player.shield = 0;
-            }
-        } else {
-            player.hp -= dmg;
-        }
+
+    public void attack(Player player) {
+        player.takeDamage(attackDamage);
     }
 }

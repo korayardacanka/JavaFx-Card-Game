@@ -26,16 +26,16 @@ public class Main extends Application {
 
     // =============== UI COMPONENTS ===============
     private ImageView playerView = new ImageView();
-    private StackPane enemyVoid = new StackPane();
-    private Timeline playerAnim = new Timeline();
+    private StackPane enemyVoid  = new StackPane();
+    private Timeline  playerAnim = new Timeline();
 
-    private Label goldLabel = new Label();
+    private Label goldLabel    = new Label();
     private Label enemyHpLabel = new Label();
-    private Label lvlLabel = new Label();
-    private Label log = new Label();
-    private Label energyLabel = new Label();
+    private Label lvlLabel     = new Label();
+    private Label log          = new Label();
+    private Label energyLabel  = new Label();
 
-    private ProgressBar hpBar = new ProgressBar();
+    private ProgressBar hpBar     = new ProgressBar();
     private ProgressBar shieldBar = new ProgressBar();
 
     private HBox handBox = new HBox(UIConstants.HAND_BOX_SPACING);
@@ -46,9 +46,6 @@ public class Main extends Application {
         showStartScreen();
     }
 
-    /**
-     * Displays the main start screen.
-     */
     private void showStartScreen() {
         VBox root = new VBox(20);
         root.setStyle(UIConstants.STYLE_CENTER_PADDING);
@@ -64,14 +61,10 @@ public class Main extends Application {
         });
 
         root.getChildren().addAll(title, startBtn);
-
         setScene(root);
         primaryStage.show();
     }
 
-    /**
-     * Displays the death screen when the player dies.
-     */
     private void showDeathScreen() {
         VBox root = new VBox(20);
         root.setStyle(UIConstants.STYLE_CENTER_PADDING + UIConstants.STYLE_DARK_BG);
@@ -91,13 +84,9 @@ public class Main extends Application {
         menuBtn.setOnAction(e -> showStartScreen());
 
         root.getChildren().addAll(title, restartBtn, menuBtn);
-
         setScene(root);
     }
 
-    /**
-     * Initializes the game state and event bus.
-     */
     private void initializeGame() {
         game = new Game();
         game.eventBus = new EventBus();
@@ -105,9 +94,6 @@ public class Main extends Application {
         game.eventBus.subscribe(new UIObserver(game, this));
     }
 
-    /**
-     * Starts the game by initializing deck and displaying the game UI.
-     */
     private void startGame() {
         resetPlayerDeck();
         drawHand();
@@ -123,9 +109,6 @@ public class Main extends Application {
         updateUI();
     }
 
-    /**
-     * Sets the scene on the primary stage with fullscreen dimensions.
-     */
     private void setScene(Pane root) {
         Scene scene = new Scene(root,
             Screen.getPrimary().getVisualBounds().getWidth(),
@@ -136,7 +119,8 @@ public class Main extends Application {
     }
 
     /**
-     * Resets the player's deck to the starting configuration.
+     * FIX: Her tipten INITIAL_DECK_COPIES (3) adet kart ekler → 9 kart toplam.
+     * Önceki kodda döngü içinde 9 kart/iterasyon × 3 iterasyon = 27 kart oluyordu.
      */
     private void resetPlayerDeck() {
         game.player.deck.clear();
@@ -146,20 +130,11 @@ public class Main extends Application {
         for (int i = 0; i < UIConstants.INITIAL_DECK_COPIES; i++) {
             game.player.deck.add(CardFactory.make("Damage", 1, 10, 1, new DamageEffect(15)));
             game.player.deck.add(CardFactory.make("Shield", 1, 10, 1, new ShieldEffect(10)));
-            game.player.deck.add(CardFactory.make("Heal", 2, 20, 1, new HealEffect(10)));
-            game.player.deck.add(CardFactory.make("Damage", 1, 10, 1, new DamageEffect(15)));
-            game.player.deck.add(CardFactory.make("Shield", 1, 10, 1, new ShieldEffect(10)));
-            game.player.deck.add(CardFactory.make("Heal", 2, 20, 1, new HealEffect(10)));
-            game.player.deck.add(CardFactory.make("Damage", 1, 10, 1, new DamageEffect(15)));
-            game.player.deck.add(CardFactory.make("Shield", 1, 10, 1, new ShieldEffect(10)));
-            game.player.deck.add(CardFactory.make("Heal", 2, 20, 1, new HealEffect(10)));
+            game.player.deck.add(CardFactory.make("Heal",   2, 20, 1, new HealEffect(10)));
         }
         Collections.shuffle(game.player.deck);
     }
 
-    /**
-     * Creates the top panel showing the level.
-     */
     private HBox createTopPanel() {
         lvlLabel = new Label();
         HBox top = new HBox(50, lvlLabel);
@@ -167,30 +142,23 @@ public class Main extends Application {
         return top;
     }
 
-    /**
-     * Creates the left panel showing gold, energy, and health bars.
-     */
     private VBox createLeftPanel() {
-        goldLabel = new Label();
+        goldLabel   = new Label();
         energyLabel = new Label();
-        
-        hpBar = new ProgressBar();
+
+        hpBar     = new ProgressBar();
         shieldBar = new ProgressBar();
         hpBar.setStyle(UIConstants.STYLE_HP_BAR);
         shieldBar.setStyle(UIConstants.STYLE_SHIELD_BAR);
         hpBar.setPrefWidth(UIConstants.PROGRESS_BAR_WIDTH);
         shieldBar.setPrefWidth(UIConstants.PROGRESS_BAR_WIDTH);
-        
+
         VBox bars = new VBox(5, hpBar, shieldBar);
         VBox left = new VBox(10, goldLabel, energyLabel, bars);
         left.setStyle(UIConstants.STYLE_SIDE_PANEL);
-        
         return left;
     }
 
-    /**
-     * Creates the right panel showing enemy information.
-     */
     private VBox createRightPanel() {
         enemyHpLabel = new Label();
         VBox right = new VBox(10, enemyHpLabel);
@@ -198,9 +166,6 @@ public class Main extends Application {
         return right;
     }
 
-    /**
-     * Creates the center panel with the battlefield.
-     */
     private HBox createCenterPanel() {
         playerView = new ImageView();
         playerAnim = new Timeline();
@@ -216,9 +181,6 @@ public class Main extends Application {
         return battleField;
     }
 
-    /**
-     * Creates the bottom panel with hand, end turn button, and log.
-     */
     private VBox createBottomPanel() {
         handBox = new HBox(UIConstants.HAND_BOX_SPACING);
         handBox.setStyle(UIConstants.STYLE_CENTER_ALIGNMENT);
@@ -232,17 +194,14 @@ public class Main extends Application {
         return bottom;
     }
 
-    /**
-     * Handles the end turn button action.
-     */
     private void handleEndTurn() {
         Shop.closeShop();
         game.enemy.attack(game.player);
-        
+
         playAnimation("_HURT_", UIConstants.HURT_FRAME_COUNT, false, () -> {
             playAnimation("_IDLE_", UIConstants.IDLE_FRAME_COUNT, true, null);
-            
-            if (game.player.hp <= 0) {
+
+            if (!game.player.isAlive()) {
                 checkPlayerDeath();
             } else {
                 startNewTurn();
@@ -250,28 +209,18 @@ public class Main extends Application {
         });
     }
 
-    /**
-     * Plays an animation for the player character.
-     * 
-     * @param prefix The animation prefix (e.g., "_IDLE_", "ATTACK_")
-     * @param frameCount The number of frames in the animation
-     * @param loop Whether the animation should loop
-     * @param onFinish Callback to execute when the animation finishes (null for looping animations)
-     */
     private void playAnimation(String prefix, int frameCount, boolean loop, Runnable onFinish) {
         playerAnim.stop();
         playerAnim.getKeyFrames().clear();
 
         for (int i = 0; i < frameCount; i++) {
             final int frame = i;
-           String fileName = "assets/" + prefix + String.format("%03d", frame) + ".png";
+            String fileName = "assets/" + prefix + String.format("%03d", frame) + ".png";
             playerAnim.getKeyFrames().add(
                 new KeyFrame(Duration.millis(UIConstants.ANIMATION_FRAME_MS * frame), e -> {
                     java.io.InputStream is = getClass().getClassLoader()
                         .getResourceAsStream(fileName);
-                    if (is != null) {
-                        playerView.setImage(new Image(is));
-                    }
+                    if (is != null) playerView.setImage(new Image(is));
                 })
             );
         }
@@ -285,9 +234,6 @@ public class Main extends Application {
         playerAnim.play();
     }
 
-    /**
-     * Draws initial hand by clearing and filling with INITIAL_HAND_SIZE cards.
-     */
     private void drawHand() {
         game.player.hand.clear();
         for (int i = 0; i < UIConstants.INITIAL_HAND_SIZE; i++) {
@@ -295,67 +241,49 @@ public class Main extends Application {
         }
     }
 
-    /**
-     * Draws a single card from the deck, reshuffling discard pile if needed.
-     */
     private void drawSingleCard() {
         if (game.player.deck.isEmpty()) {
             game.player.deck.addAll(game.player.discard);
             game.player.discard.clear();
             Collections.shuffle(game.player.deck);
         }
-        
         if (!game.player.deck.isEmpty()) {
             game.player.hand.add(game.player.deck.remove(0));
         }
     }
 
-    /**
-     * Creates a card UI component.
-     * 
-     * @param c The card to display
-     * @param index The index in the hand
-     * @return A VBox containing the card UI
-     */
     private VBox createCard(Card c, int index) {
         VBox box = new VBox(5);
         box.setPrefSize(UIConstants.CARD_SIZE_WIDTH, UIConstants.CARD_SIZE_HEIGHT);
 
-        String bg = "#ffffff";
-        String border = "#000000";
+        String bg          = "#ffffff";
+        String border      = "#000000";
         String borderWidth = "1";
 
         if (c.design != null) {
-            bg = c.design.getBackground();
-            border = c.design.getBorder();
+            bg          = c.design.getBackground();
+            border      = c.design.getBorder();
             borderWidth = "3";
         }
 
         box.setStyle(
             "-fx-background-color:" + bg + ";" +
-            "-fx-border-color:" + border + ";" +
-            "-fx-border-width:" + borderWidth + ";" +
+            "-fx-border-color:"     + border + ";" +
+            "-fx-border-width:"     + borderWidth + ";" +
             "-fx-padding:10;"
         );
 
         Label name = new Label(c.name);
         Label cost = new Label("Cost: " + c.cost);
         Button play = new Button("Play");
-
         play.setOnAction(e -> handleCardPlay(c));
 
         box.getChildren().addAll(name, cost, play);
         return box;
     }
 
-    /**
-     * Handles card play action.
-     * 
-     * @param c The card being played
-     */
     private void handleCardPlay(Card c) {
-        if (game.player.energy >= c.cost) {
-            game.player.energy -= c.cost;
+        if (game.player.spendEnergy(c.cost)) {
             c.use(game.player, game.enemy);
             game.player.hand.remove(c);
             game.player.discard.add(c);
@@ -372,9 +300,6 @@ public class Main extends Application {
         }
     }
 
-    /**
-     * Updates the hand UI by clearing and redrawing all cards.
-     */
     private void updateHandUI() {
         handBox.getChildren().clear();
         for (int i = 0; i < game.player.hand.size(); i++) {
@@ -382,24 +307,21 @@ public class Main extends Application {
         }
     }
 
-    /**
-     * Checks if enemy is dead and handles level progression.
-     */
     private void checkEnemy() {
-        if (game.enemy.hp <= 0) {
+        if (!game.enemy.isAlive()) {
             Enemy dead = game.enemy;
             game.eventBus.publish(new EnemyDeathEvent(dead));
             game.level++;
             game.enemy = EnemyFactory.createEnemy(game.level);
             updateEnemyVisuals();
-            
+
             if (game.level % 2 == 0) {
                 game.maxEnergy++;
             }
 
             game.currentShopCards = CardFactory.shopCards(game.level, game.player);
 
-            if (dead.isBoss) {
+            if (dead.isBoss()) {
                 game.currentBossRelics = RelicFactory.bossRelics(game.level);
             } else {
                 game.currentBossRelics.clear();
@@ -409,43 +331,38 @@ public class Main extends Application {
         }
     }
 
-    /**
-     * Checks if the player is dead and shows the death screen if so.
-     */
     private void checkPlayerDeath() {
-        if (game.player.hp <= 0) {
-            playAnimation("_DIE_", UIConstants.DEATH_FRAME_COUNT, false, () -> {
-                showDeathScreen();
-            });
+        if (!game.player.isAlive()) {
+            playAnimation("_DIE_", UIConstants.DEATH_FRAME_COUNT, false, this::showDeathScreen);
         }
     }
 
     /**
-     * Updates all UI elements to reflect current game state.
+     * Tüm UI bileşenlerini güncel oyun durumuna göre yeniler.
      */
     public void updateUI() {
-        goldLabel.setText("Gold: " + game.player.gold);
+        goldLabel.setText("Gold: " + game.player.getGold());
 
-        String enemyLabel = game.enemy.name + " | HP: " + game.enemy.hp;
-        if (game.enemy.isBoss) {
-            enemyLabel = "⚠️ " + enemyLabel + " | ATK: " + game.enemy.attackDamage + " (x2)";
+        String enemyLabel = game.enemy.getName() + " | HP: " + game.enemy.getHp();
+        if (game.enemy.isBoss()) {
+            enemyLabel = "⚠️ " + enemyLabel + " | ATK: " + game.enemy.getAttackDamage() + " (x2)";
         } else {
-            enemyLabel += " | ATK: " + game.enemy.attackDamage;
+            enemyLabel += " | ATK: " + game.enemy.getAttackDamage();
         }
         enemyHpLabel.setText(enemyLabel);
 
         lvlLabel.setText("LEVEL: " + game.level);
 
-        hpBar.setProgress((double) game.player.hp / game.player.maxhp);
+        hpBar.setProgress((double) game.player.getHp() / game.player.getMaxHp());
 
-        if (game.player.shield > 0) {
+        if (game.player.getShield() > 0) {
             shieldBar.setVisible(true);
-            shieldBar.setProgress(game.player.shield / UIConstants.SHIELD_MAX);
+            shieldBar.setProgress(game.player.getShield() / UIConstants.SHIELD_MAX);
         } else {
             shieldBar.setVisible(false);
         }
 
-        energyLabel.setText("Energy: " + game.player.energy + "/" + game.maxEnergy);
+        energyLabel.setText("Energy: " + game.player.getEnergy() + "/" + game.maxEnergy);
 
         if (!game.lastEvent.isEmpty()) {
             log.setText(game.lastEvent);
@@ -454,13 +371,10 @@ public class Main extends Application {
         updateHandUI();
     }
 
-    /**
-     * Updates the visual representation of the enemy.
-     */
     private void updateEnemyVisuals() {
         EnemyDesign design = new BaseEnemyDesign();
 
-        if (game.enemy.isBoss) {
+        if (game.enemy.isBoss()) {
             design = new BossBorderDecorator(design, game.level);
         }
 
@@ -472,11 +386,9 @@ public class Main extends Application {
         );
     }
 
-    /**
-     * Starts a new turn by restoring energy, applying passive relics, and drawing cards.
-     */
     private void startNewTurn() {
-        game.player.energy = game.maxEnergy;
+        game.player.restoreEnergy(game.maxEnergy);
+        game.lastEvent = "";   // Önceki tur mesajını temizle
 
         for (RelicItem relic : game.ownedRelics) {
             relic.applyPassive(game.player, game);

@@ -1,5 +1,5 @@
 package com.koray;
-
+ 
 class PassiveHealRelic extends RelicItem {
     private int healPerTurn;
  
@@ -12,6 +12,6 @@ class PassiveHealRelic extends RelicItem {
  
     @Override
     public void applyPassive(Player player, Game game) {
-        player.hp = Math.min(player.hp + healPerTurn, player.maxhp);
+        player.heal(healPerTurn);
     }
 }

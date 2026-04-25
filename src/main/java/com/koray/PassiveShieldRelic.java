@@ -1,5 +1,5 @@
 package com.koray;
-
+ 
 class PassiveShieldRelic extends RelicItem {
     private int shieldPerTurn;
  
@@ -12,6 +12,7 @@ class PassiveShieldRelic extends RelicItem {
  
     @Override
     public void applyPassive(Player player, Game game) {
-        player.shield += shieldPerTurn;
+        player.addShield(shieldPerTurn);
     }
 }
+ 
