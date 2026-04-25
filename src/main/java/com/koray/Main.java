@@ -1,7 +1,6 @@
 package com.koray;
 
-import javafx.animation.KeyFrame;
-import javafx.animation.Timeline;
+import javafx.animation.*;
 import javafx.application.Application;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
@@ -26,16 +25,16 @@ public class Main extends Application {
 
     // =============== UI COMPONENTS ===============
     private ImageView playerView = new ImageView();
-    private StackPane enemyVoid  = new StackPane();
-    private Timeline  playerAnim = new Timeline();
+    private StackPane enemyVoid = new StackPane();
+    private Timeline playerAnim = new Timeline();
 
-    private Label goldLabel    = new Label();
+    private Label goldLabel = new Label();
     private Label enemyHpLabel = new Label();
-    private Label lvlLabel     = new Label();
-    private Label log          = new Label();
-    private Label energyLabel  = new Label();
+    private Label lvlLabel = new Label();
+    private Label log = new Label();
+    private Label energyLabel = new Label();
 
-    private ProgressBar hpBar     = new ProgressBar();
+    private ProgressBar hpBar = new ProgressBar();
     private ProgressBar shieldBar = new ProgressBar();
 
     private HBox handBox = new HBox(UIConstants.HAND_BOX_SPACING);
@@ -130,7 +129,7 @@ public class Main extends Application {
         for (int i = 0; i < UIConstants.INITIAL_DECK_COPIES; i++) {
             game.player.deck.add(CardFactory.make("Damage", 1, 10, 1, new DamageEffect(15)));
             game.player.deck.add(CardFactory.make("Shield", 1, 10, 1, new ShieldEffect(10)));
-            game.player.deck.add(CardFactory.make("Heal",   2, 20, 1, new HealEffect(10)));
+            game.player.deck.add(CardFactory.make("Heal", 2, 20, 1, new HealEffect(10)));
         }
         Collections.shuffle(game.player.deck);
     }
@@ -143,10 +142,10 @@ public class Main extends Application {
     }
 
     private VBox createLeftPanel() {
-        goldLabel   = new Label();
+        goldLabel = new Label();
         energyLabel = new Label();
 
-        hpBar     = new ProgressBar();
+        hpBar = new ProgressBar();
         shieldBar = new ProgressBar();
         hpBar.setStyle(UIConstants.STYLE_HP_BAR);
         shieldBar.setStyle(UIConstants.STYLE_SHIELD_BAR);
@@ -256,34 +255,35 @@ public class Main extends Application {
         VBox box = new VBox(5);
         box.setPrefSize(UIConstants.CARD_SIZE_WIDTH, UIConstants.CARD_SIZE_HEIGHT);
 
-        String bg          = "#ffffff";
-        String border      = "#000000";
+        String bg = "#ffffff";
+        String border = "#000000";
         String borderWidth = "1";
 
         if (c.design != null) {
-            bg          = c.design.getBackground();
-            border      = c.design.getBorder();
+            bg = c.design.getBackground();
+            border = c.design.getBorder();
             borderWidth = "3";
         }
 
         box.setStyle(
             "-fx-background-color:" + bg + ";" +
-            "-fx-border-color:"     + border + ";" +
-            "-fx-border-width:"     + borderWidth + ";" +
+            "-fx-border-color:" + border + ";" +
+            "-fx-border-width:" + borderWidth + ";" +
             "-fx-padding:10;"
         );
 
         Label name = new Label(c.name);
         Label cost = new Label("Cost: " + c.cost);
         Button play = new Button("Play");
-        play.setOnAction(e -> handleCardPlay(c));
+        play.setOnAction(e -> handleCardPlay(c, box));
 
         box.getChildren().addAll(name, cost, play);
         return box;
     }
 
-    private void handleCardPlay(Card c) {
+    private void handleCardPlay(Card c, VBox cardBox) {
         if (game.player.spendEnergy(c.cost)) {
+            // Oyun mantığını işle
             c.use(game.player, game.enemy);
             game.player.hand.remove(c);
             game.player.discard.add(c);
@@ -295,9 +295,45 @@ public class Main extends Application {
                 playAnimation("_IDLE_", UIConstants.IDLE_FRAME_COUNT, true, null);
             }
 
-            checkEnemy();
-            updateUI();
+            // Kart efekti oynat ve animasyon bitince UI güncelle
+            playCardEffect(cardBox, () -> {
+                checkEnemy();
+                updateUI();
+            });
         }
+    }
+
+    /**
+     * Kartın ortaya doğru gidip kaybolması efektini oynat.
+     * Animasyon bitince onFinish callback'i çalıştır.
+     */
+    private void playCardEffect(VBox cardBox, Runnable onFinish) {
+        // Yukarı hareket
+        TranslateTransition translate = new TranslateTransition(Duration.millis(600), cardBox);
+        translate.setToY(-200);
+
+        // Solma
+        FadeTransition fade = new FadeTransition(Duration.millis(600), cardBox);
+        fade.setToValue(0.0);
+
+        // Döndürme
+        RotateTransition rotate = new RotateTransition(Duration.millis(600), cardBox);
+        rotate.setByAngle(360);
+
+        // Ölçeklendirme
+        ScaleTransition scale = new ScaleTransition(Duration.millis(600), cardBox);
+        scale.setToX(0.3);
+        scale.setToY(0.3);
+
+        // Tüm animasyonları paralel çalıştır
+        ParallelTransition parallel = new ParallelTransition(translate, fade, rotate, scale);
+        parallel.setOnFinished(e -> {
+            // Animasyon bittikten sonra callback'i çalıştır
+            if (onFinish != null) {
+                onFinish.run();
+            }
+        });
+        parallel.play();
     }
 
     private void updateHandUI() {
@@ -388,7 +424,7 @@ public class Main extends Application {
 
     private void startNewTurn() {
         game.player.restoreEnergy(game.maxEnergy);
-        game.lastEvent = "";   // Önceki tur mesajını temizle
+        game.lastEvent = "";
 
         for (RelicItem relic : game.ownedRelics) {
             relic.applyPassive(game.player, game);
