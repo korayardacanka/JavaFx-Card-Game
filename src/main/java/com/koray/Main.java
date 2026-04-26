@@ -2,6 +2,8 @@ package com.koray;
 
 import javafx.animation.*;
 import javafx.application.Application;
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.image.Image;
@@ -14,10 +16,6 @@ import javafx.util.Duration;
 import java.util.Collections;
 import java.util.Objects;
 
-/**
- * Main application class for the Card Game.
- * Manages UI rendering, animations, and game flow.
- */
 public class Main extends Application {
 
     // =============== GAME STATE ===============
@@ -26,17 +24,20 @@ public class Main extends Application {
 
     // =============== UI COMPONENTS ===============
     private ImageView playerView = new ImageView();
-    private StackPane enemyVoid = new StackPane();
-    private Timeline playerAnim = new Timeline();
+    private StackPane enemyVoid  = new StackPane();
+    private Timeline  playerAnim = new Timeline();
 
-    private Label goldLabel = new Label();
+    private Label goldLabel    = new Label();
     private Label enemyHpLabel = new Label();
-    private Label lvlLabel = new Label();
-    private Label log = new Label();
-    private Label energyLabel = new Label();
+    private Label lvlLabel     = new Label();
+    private Label log          = new Label();
+    private Label energyLabel  = new Label();
+    private Label hpLabel      = new Label();
+    private Label shieldLabel  = new Label();
 
-    private ProgressBar hpBar = new ProgressBar();
-    private ProgressBar shieldBar = new ProgressBar();
+    private ProgressBar hpBar      = new ProgressBar();
+    private ProgressBar shieldBar  = new ProgressBar();
+    private ProgressBar enemyHpBar = new ProgressBar();
 
     private HBox handBox = new HBox(UIConstants.HAND_BOX_SPACING);
 
@@ -46,6 +47,7 @@ public class Main extends Application {
         showStartScreen();
     }
 
+    // ─── Başlangıç ekranı ───────────────────────────────────────────────────
     private void showStartScreen() {
         VBox root = new VBox(20);
         root.setStyle(UIConstants.STYLE_CENTER_PADDING);
@@ -55,10 +57,7 @@ public class Main extends Application {
 
         Button startBtn = new Button("Başlat");
         startBtn.setStyle(UIConstants.STYLE_BUTTON_LARGE);
-        startBtn.setOnAction(e -> {
-            initializeGame();
-            startGame();
-        });
+        startBtn.setOnAction(e -> { initializeGame(); startGame(); });
 
         root.getChildren().addAll(title, startBtn);
         setScene(root);
@@ -74,10 +73,7 @@ public class Main extends Application {
 
         Button restartBtn = new Button("Tekrar Oyna");
         restartBtn.setStyle(UIConstants.STYLE_BUTTON_LARGE);
-        restartBtn.setOnAction(e -> {
-            initializeGame();
-            startGame();
-        });
+        restartBtn.setOnAction(e -> { initializeGame(); startGame(); });
 
         Button menuBtn = new Button("Ana Menü");
         menuBtn.setStyle(UIConstants.STYLE_BUTTON_LARGE);
@@ -94,34 +90,148 @@ public class Main extends Application {
         game.eventBus.subscribe(new UIObserver(game, this));
     }
 
-  private void startGame() {
-    resetPlayerDeck();
-    drawHand();
+    // ─── Ana oyun sahnesi ───────────────────────────────────────────────────
+    private void startGame() {
+        resetPlayerDeck();
+        drawHand();
 
-    Image bgImage = new Image(
-        Objects.requireNonNull(
-            getClass().getResource("/assets/game_background_4.png")
-        ).toExternalForm()
-    );
+        double W = Screen.getPrimary().getVisualBounds().getWidth();
+        double H = Screen.getPrimary().getVisualBounds().getHeight();
 
-    ImageView background = new ImageView(bgImage);
-    background.setFitWidth(Screen.getPrimary().getVisualBounds().getWidth());
-    background.setFitHeight(Screen.getPrimary().getVisualBounds().getHeight());
-    background.setPreserveRatio(false);
+        // Arka plan
+        ImageView background = new ImageView(
+            new Image(Objects.requireNonNull(
+                getClass().getResource("/assets/game_background_4.png")
+            ).toExternalForm())
+        );
+        background.setFitWidth(W);
+        background.setFitHeight(H);
+        background.setPreserveRatio(false);
 
-    BorderPane ui = new BorderPane();
-    ui.setTop(createTopPanel());
-    ui.setLeft(createLeftPanel());
-    ui.setRight(createRightPanel());
-    ui.setCenter(createCenterPanel());
-    ui.setBottom(createBottomPanel());
+        // ── Karakterler ─────────────────────────────────────────────────────
+        playerView = new ImageView();
+        playerAnim = new Timeline();
+        playerView.setFitWidth(UIConstants.PLAYER_VIEW_WIDTH);
+        playerView.setPreserveRatio(true);
+        playAnimation("_IDLE_", UIConstants.IDLE_FRAME_COUNT, true, null);
 
-    StackPane root = new StackPane();
-    root.getChildren().addAll(background, ui); // 👈 SADECE UI
+        enemyVoid = new StackPane();
+        enemyVoid.setPrefSize(UIConstants.ENEMY_SIZE, UIConstants.ENEMY_SIZE);
+        updateEnemyVisuals();
 
-    setScene(root);
-    updateUI();
-}
+        // VBox + BOTTOM_CENTER → karakter zeminde duruyor gibi görünür
+        VBox playerSlot = new VBox(playerView);
+        playerSlot.setAlignment(Pos.BOTTOM_CENTER);
+
+        VBox enemySlot = new VBox(enemyVoid);
+        enemySlot.setAlignment(Pos.BOTTOM_CENTER);
+
+        // ── Üst HUD ─────────────────────────────────────────────────────────
+        lvlLabel = new Label();
+        lvlLabel.setStyle("-fx-text-fill:white; -fx-font-size:18px; -fx-font-weight:bold;");
+
+        HBox topHUD = new HBox(lvlLabel);
+        topHUD.setAlignment(Pos.CENTER);
+        topHUD.setPadding(new Insets(10));
+        topHUD.setStyle("-fx-background-color: rgba(0,0,0,0.45);");
+
+        // ── Sol panel — oyuncu stats ─────────────────────────────────────────
+        goldLabel   = new Label();
+        energyLabel = new Label();
+        hpLabel     = new Label();
+        shieldLabel = new Label();
+
+        styleHUDLabel(goldLabel);
+        styleHUDLabel(energyLabel);
+        styleHUDLabel(hpLabel);
+        styleHUDLabel(shieldLabel);
+
+        hpBar = new ProgressBar(1.0);
+        hpBar.setStyle("-fx-accent: #cc3333;");
+        hpBar.setPrefWidth(160);
+
+        shieldBar = new ProgressBar(0.0);
+        shieldBar.setStyle("-fx-accent: #3388cc;");
+        shieldBar.setPrefWidth(160);
+
+        VBox leftPanel = new VBox(5, hpLabel, hpBar, shieldLabel, shieldBar, energyLabel, goldLabel);
+        leftPanel.setPadding(new Insets(14));
+        leftPanel.setStyle(
+            "-fx-background-color: rgba(0,0,0,0.52);" +
+            "-fx-background-radius: 0 10 10 0;"
+        );
+
+        // ── Sağ panel — düşman stats ─────────────────────────────────────────
+        enemyHpLabel = new Label();
+        styleHUDLabel(enemyHpLabel);
+
+        enemyHpBar = new ProgressBar(1.0);
+        enemyHpBar.setStyle("-fx-accent: #cc3333;");
+        enemyHpBar.setPrefWidth(160);
+
+        VBox rightPanel = new VBox(5, enemyHpLabel, enemyHpBar);
+        rightPanel.setPadding(new Insets(14));
+        rightPanel.setStyle(
+            "-fx-background-color: rgba(0,0,0,0.52);" +
+            "-fx-background-radius: 10 0 0 10;"
+        );
+
+        // ── Alt panel — el kartları ──────────────────────────────────────────
+        handBox = new HBox(UIConstants.HAND_BOX_SPACING);
+        handBox.setAlignment(Pos.CENTER);
+
+        log = new Label();
+        log.setStyle("-fx-text-fill: #ffdd88; -fx-font-size:13px;");
+
+        Button endTurn = new Button("End Turn");
+        endTurn.setStyle("-fx-font-size:14px; -fx-padding: 6 20;");
+        endTurn.setOnAction(e -> handleEndTurn());
+
+        VBox bottomPanel = new VBox(6, handBox, endTurn, log);
+        bottomPanel.setAlignment(Pos.CENTER);
+        bottomPanel.setPadding(new Insets(8));
+        bottomPanel.setStyle("-fx-background-color: rgba(0,0,0,0.55);");
+
+        // ── AnchorPane — kesin konumlandırma ────────────────────────────────
+        AnchorPane ui = new AnchorPane();
+
+        // Üst HUD: tam genişlik, en üst
+        AnchorPane.setTopAnchor(topHUD, 0.0);
+        AnchorPane.setLeftAnchor(topHUD, 0.0);
+        AnchorPane.setRightAnchor(topHUD, 0.0);
+
+        // Sol panel: sol kenar
+        AnchorPane.setLeftAnchor(leftPanel, 0.0);
+        AnchorPane.setTopAnchor(leftPanel, 50.0);
+
+        // Sağ panel: sağ kenar
+        AnchorPane.setRightAnchor(rightPanel, 0.0);
+        AnchorPane.setTopAnchor(rightPanel, 50.0);
+
+        // Oyuncu: sol taraf, alt panel üstünde zemine otursun
+        AnchorPane.setLeftAnchor(playerSlot, W * 0.20);
+        AnchorPane.setBottomAnchor(playerSlot, 230.0);
+
+        // Düşman: sağ taraf, zemine otursun
+        AnchorPane.setRightAnchor(enemySlot, W * 0.20);
+        AnchorPane.setBottomAnchor(enemySlot, 230.0);
+
+        // Alt panel: tam genişlik, en alt
+        AnchorPane.setBottomAnchor(bottomPanel, 0.0);
+        AnchorPane.setLeftAnchor(bottomPanel, 0.0);
+        AnchorPane.setRightAnchor(bottomPanel, 0.0);
+
+        // Karakterler önce, paneller üstüne çizilsin (z-order)
+        ui.getChildren().addAll(playerSlot, enemySlot, topHUD, leftPanel, rightPanel, bottomPanel);
+
+        StackPane root = new StackPane(background, ui);
+        setScene(root);
+        updateUI();
+    }
+
+    private void styleHUDLabel(Label lbl) {
+        lbl.setStyle("-fx-text-fill: white; -fx-font-size:13px;");
+    }
 
     private void setScene(Pane root) {
         Scene scene = new Scene(root,
@@ -132,10 +242,7 @@ public class Main extends Application {
         primaryStage.setMaximized(true);
     }
 
-    /**
-     * FIX: Her tipten INITIAL_DECK_COPIES (3) adet kart ekler → 9 kart toplam.
-     * Önceki kodda döngü içinde 9 kart/iterasyon × 3 iterasyon = 27 kart oluyordu.
-     */
+    // ─── Deck yönetimi ───────────────────────────────────────────────────────
     private void resetPlayerDeck() {
         game.player.deck.clear();
         game.player.hand.clear();
@@ -144,115 +251,14 @@ public class Main extends Application {
         for (int i = 0; i < UIConstants.INITIAL_DECK_COPIES; i++) {
             game.player.deck.add(CardFactory.make("Damage", 1, 10, 1, new DamageEffect(15)));
             game.player.deck.add(CardFactory.make("Shield", 1, 10, 1, new ShieldEffect(10)));
-            game.player.deck.add(CardFactory.make("Heal", 2, 20, 1, new HealEffect(10)));
+            game.player.deck.add(CardFactory.make("Heal",   2, 20, 1, new HealEffect(10)));
         }
         Collections.shuffle(game.player.deck);
     }
 
-    private HBox createTopPanel() {
-        lvlLabel = new Label();
-        HBox top = new HBox(50, lvlLabel);
-        top.setStyle(UIConstants.STYLE_TOP_PANEL);
-        return top;
-    }
-
-    private VBox createLeftPanel() {
-        goldLabel = new Label();
-        energyLabel = new Label();
-
-        hpBar = new ProgressBar();
-        shieldBar = new ProgressBar();
-        hpBar.setStyle(UIConstants.STYLE_HP_BAR);
-        shieldBar.setStyle(UIConstants.STYLE_SHIELD_BAR);
-        hpBar.setPrefWidth(UIConstants.PROGRESS_BAR_WIDTH);
-        shieldBar.setPrefWidth(UIConstants.PROGRESS_BAR_WIDTH);
-
-        VBox bars = new VBox(5, hpBar, shieldBar);
-        VBox left = new VBox(10, goldLabel, energyLabel, bars);
-        left.setStyle(UIConstants.STYLE_SIDE_PANEL);
-        return left;
-    }
-
-    private VBox createRightPanel() {
-        enemyHpLabel = new Label();
-        VBox right = new VBox(10, enemyHpLabel);
-        right.setStyle(UIConstants.STYLE_SIDE_PANEL);
-        return right;
-    }
-
-    private HBox createCenterPanel() {
-        playerView = new ImageView();
-        playerAnim = new Timeline();
-        playerView.setFitWidth(UIConstants.PLAYER_VIEW_WIDTH);
-        playerView.setPreserveRatio(true);
-        playAnimation("_IDLE_", UIConstants.IDLE_FRAME_COUNT, true, null);
-
-        enemyVoid.setPrefSize(UIConstants.ENEMY_SIZE, UIConstants.ENEMY_SIZE);
-        updateEnemyVisuals();
-
-        HBox battleField = new HBox(100, playerView, enemyVoid);
-        battleField.setStyle(UIConstants.STYLE_CENTER_ALIGNMENT);
-        return battleField;
-    }
-
-    private VBox createBottomPanel() {
-        handBox = new HBox(UIConstants.HAND_BOX_SPACING);
-        handBox.setStyle(UIConstants.STYLE_CENTER_ALIGNMENT);
-        log = new Label();
-
-        Button endTurn = new Button("End Turn");
-        endTurn.setOnAction(e -> handleEndTurn());
-
-        VBox bottom = new VBox(10);
-        bottom.getChildren().addAll(handBox, endTurn, log);
-        return bottom;
-    }
-
-    private void handleEndTurn() {
-        Shop.closeShop();
-        game.enemy.attack(game.player);
-
-        playAnimation("_HURT_", UIConstants.HURT_FRAME_COUNT, false, () -> {
-            playAnimation("_IDLE_", UIConstants.IDLE_FRAME_COUNT, true, null);
-
-            if (!game.player.isAlive()) {
-                checkPlayerDeath();
-            } else {
-                startNewTurn();
-            }
-        });
-    }
-
-    private void playAnimation(String prefix, int frameCount, boolean loop, Runnable onFinish) {
-        playerAnim.stop();
-        playerAnim.getKeyFrames().clear();
-
-        for (int i = 0; i < frameCount; i++) {
-            final int frame = i;
-            String fileName = "assets/" + prefix + String.format("%03d", frame) + ".png";
-            playerAnim.getKeyFrames().add(
-                new KeyFrame(Duration.millis(UIConstants.ANIMATION_FRAME_MS * frame), e -> {
-                    java.io.InputStream is = getClass().getClassLoader()
-                        .getResourceAsStream(fileName);
-                    if (is != null) playerView.setImage(new Image(is));
-                })
-            );
-        }
-
-        playerAnim.setCycleCount(loop ? Timeline.INDEFINITE : 1);
-        if (onFinish != null && !loop) {
-            playerAnim.setOnFinished(e -> onFinish.run());
-        } else {
-            playerAnim.setOnFinished(null);
-        }
-        playerAnim.play();
-    }
-
     private void drawHand() {
         game.player.hand.clear();
-        for (int i = 0; i < UIConstants.INITIAL_HAND_SIZE; i++) {
-            drawSingleCard();
-        }
+        for (int i = 0; i < UIConstants.INITIAL_HAND_SIZE; i++) drawSingleCard();
     }
 
     private void drawSingleCard() {
@@ -266,29 +272,32 @@ public class Main extends Application {
         }
     }
 
-    private VBox createCard(Card c, int index) {
+    // ─── Kart UI ─────────────────────────────────────────────────────────────
+    private VBox createCard(Card c) {
         VBox box = new VBox(5);
         box.setPrefSize(UIConstants.CARD_SIZE_WIDTH, UIConstants.CARD_SIZE_HEIGHT);
 
-        String bg = "#ffffff";
-        String border = "#000000";
+        String bg          = "#ffffff";
+        String border      = "#000000";
         String borderWidth = "1";
 
         if (c.design != null) {
-            bg = c.design.getBackground();
-            border = c.design.getBorder();
+            bg          = c.design.getBackground();
+            border      = c.design.getBorder();
             borderWidth = "3";
         }
 
         box.setStyle(
             "-fx-background-color:" + bg + ";" +
-            "-fx-border-color:" + border + ";" +
-            "-fx-border-width:" + borderWidth + ";" +
-            "-fx-padding:10;"
+            "-fx-border-color:"     + border + ";" +
+            "-fx-border-width:"     + borderWidth + ";" +
+            "-fx-background-radius:8; -fx-border-radius:8; -fx-padding:10;"
         );
 
         Label name = new Label(c.name);
+        name.setStyle("-fx-font-weight:bold; -fx-font-size:13px;");
         Label cost = new Label("Cost: " + c.cost);
+
         Button play = new Button("Play");
         play.setOnAction(e -> handleCardPlay(c, box));
 
@@ -296,9 +305,16 @@ public class Main extends Application {
         return box;
     }
 
+    private void updateHandUI() {
+        handBox.getChildren().clear();
+        for (Card c : game.player.hand) {
+            handBox.getChildren().add(createCard(c));
+        }
+    }
+
+    // ─── Savaş mantığı ───────────────────────────────────────────────────────
     private void handleCardPlay(Card c, VBox cardBox) {
         if (game.player.spendEnergy(c.cost)) {
-            // Oyun mantığını işle
             c.use(game.player, game.enemy);
             game.player.hand.remove(c);
             game.player.discard.add(c);
@@ -310,52 +326,38 @@ public class Main extends Application {
                 playAnimation("_IDLE_", UIConstants.IDLE_FRAME_COUNT, true, null);
             }
 
-            // Kart efekti oynat ve animasyon bitince UI güncelle
-            playCardEffect(cardBox, () -> {
-                checkEnemy();
-                updateUI();
-            });
+            playCardEffect(cardBox, () -> { checkEnemy(); updateUI(); });
         }
     }
 
-    /**
-     * Kartın ortaya doğru gidip kaybolması efektini oynat.
-     * Animasyon bitince onFinish callback'i çalıştır.
-     */
     private void playCardEffect(VBox cardBox, Runnable onFinish) {
-        // Yukarı hareket
         TranslateTransition translate = new TranslateTransition(Duration.millis(600), cardBox);
         translate.setToY(-200);
 
-        // Solma
         FadeTransition fade = new FadeTransition(Duration.millis(600), cardBox);
         fade.setToValue(0.0);
 
-        // Döndürme
         RotateTransition rotate = new RotateTransition(Duration.millis(600), cardBox);
         rotate.setByAngle(360);
 
-        // Ölçeklendirme
         ScaleTransition scale = new ScaleTransition(Duration.millis(600), cardBox);
         scale.setToX(0.3);
         scale.setToY(0.3);
 
-        // Tüm animasyonları paralel çalıştır
         ParallelTransition parallel = new ParallelTransition(translate, fade, rotate, scale);
-        parallel.setOnFinished(e -> {
-            // Animasyon bittikten sonra callback'i çalıştır
-            if (onFinish != null) {
-                onFinish.run();
-            }
-        });
+        parallel.setOnFinished(e -> { if (onFinish != null) onFinish.run(); });
         parallel.play();
     }
 
-    private void updateHandUI() {
-        handBox.getChildren().clear();
-        for (int i = 0; i < game.player.hand.size(); i++) {
-            handBox.getChildren().add(createCard(game.player.hand.get(i), i));
-        }
+    private void handleEndTurn() {
+        Shop.closeShop();
+        game.enemy.attack(game.player);
+
+        playAnimation("_HURT_", UIConstants.HURT_FRAME_COUNT, false, () -> {
+            playAnimation("_IDLE_", UIConstants.IDLE_FRAME_COUNT, true, null);
+            if (!game.player.isAlive()) checkPlayerDeath();
+            else                        startNewTurn();
+        });
     }
 
     private void checkEnemy() {
@@ -366,17 +368,12 @@ public class Main extends Application {
             game.enemy = EnemyFactory.createEnemy(game.level);
             updateEnemyVisuals();
 
-            if (game.level % 2 == 0) {
-                game.maxEnergy++;
-            }
+            if (game.level % 2 == 0) game.maxEnergy++;
 
             game.currentShopCards = CardFactory.shopCards(game.level, game.player);
 
-            if (dead.isBoss()) {
-                game.currentBossRelics = RelicFactory.bossRelics(game.level);
-            } else {
-                game.currentBossRelics.clear();
-            }
+            if (dead.isBoss()) game.currentBossRelics = RelicFactory.bossRelics(game.level);
+            else               game.currentBossRelics.clear();
 
             Shop.open(game);
         }
@@ -388,55 +385,6 @@ public class Main extends Application {
         }
     }
 
-    /**
-     * Tüm UI bileşenlerini güncel oyun durumuna göre yeniler.
-     */
-    public void updateUI() {
-        goldLabel.setText("Gold: " + game.player.getGold());
-
-        String enemyLabel = game.enemy.getName() + " | HP: " + game.enemy.getHp();
-        if (game.enemy.isBoss()) {
-            enemyLabel = "⚠️ " + enemyLabel + " | ATK: " + game.enemy.getAttackDamage() + " (x2)";
-        } else {
-            enemyLabel += " | ATK: " + game.enemy.getAttackDamage();
-        }
-        enemyHpLabel.setText(enemyLabel);
-
-        lvlLabel.setText("LEVEL: " + game.level);
-
-        hpBar.setProgress((double) game.player.getHp() / game.player.getMaxHp());
-
-        if (game.player.getShield() > 0) {
-            shieldBar.setVisible(true);
-            shieldBar.setProgress(game.player.getShield() / UIConstants.SHIELD_MAX);
-        } else {
-            shieldBar.setVisible(false);
-        }
-
-        energyLabel.setText("Energy: " + game.player.getEnergy() + "/" + game.maxEnergy);
-
-        if (!game.lastEvent.isEmpty()) {
-            log.setText(game.lastEvent);
-        }
-
-        updateHandUI();
-    }
-
-    private void updateEnemyVisuals() {
-        EnemyDesign design = new BaseEnemyDesign();
-
-        if (game.enemy.isBoss()) {
-            design = new BossBorderDecorator(design, game.level);
-        }
-
-        enemyVoid.setStyle(
-            "-fx-background-color: black; " +
-            "-fx-background-radius: 50%; " +
-            design.getBorderStyle() +
-            design.getEffect()
-        );
-    }
-
     private void startNewTurn() {
         game.player.restoreEnergy(game.maxEnergy);
         game.lastEvent = "";
@@ -446,15 +394,84 @@ public class Main extends Application {
         }
 
         int cardsToDraw = UIConstants.INITIAL_HAND_SIZE - game.player.hand.size();
-        for (int i = 0; i < cardsToDraw; i++) {
-            drawSingleCard();
-        }
+        for (int i = 0; i < cardsToDraw; i++) drawSingleCard();
 
         updateUI();
-        log.setText("Yeni tur başladı. Yadigâr etkileri uygulandı!");
+        log.setText("Yeni tur başladı.");
     }
 
-    public static void main(String[] args) {
-        launch();
+    // ─── Animasyon ───────────────────────────────────────────────────────────
+    private void playAnimation(String prefix, int frameCount, boolean loop, Runnable onFinish) {
+        playerAnim.stop();
+        playerAnim.getKeyFrames().clear();
+
+        for (int i = 0; i < frameCount; i++) {
+            final int frame = i;
+            String fileName = "assets/" + prefix + String.format("%03d", frame) + ".png";
+            playerAnim.getKeyFrames().add(
+                new KeyFrame(Duration.millis(UIConstants.ANIMATION_FRAME_MS * frame), e -> {
+                    java.io.InputStream is = getClass().getClassLoader().getResourceAsStream(fileName);
+                    if (is != null) playerView.setImage(new Image(is));
+                })
+            );
+        }
+
+        playerAnim.setCycleCount(loop ? Timeline.INDEFINITE : 1);
+        playerAnim.setOnFinished((!loop && onFinish != null) ? e -> onFinish.run() : null);
+        playerAnim.play();
     }
+
+    // ─── UI güncelleme ───────────────────────────────────────────────────────
+    public void updateUI() {
+        // ── Oyuncu (sayı + progress bar) ────────────────────────────────────
+        goldLabel.setText("Gold: " + game.player.getGold());
+        energyLabel.setText("Energy: " + game.player.getEnergy() + " / " + game.maxEnergy);
+        lvlLabel.setText("LEVEL " + game.level);
+
+        hpLabel.setText("❤  " + game.player.getHp() + " / " + game.player.getMaxHp());
+        double playerHpRatio = (double) game.player.getHp() / game.player.getMaxHp();
+        hpBar.setProgress(Math.max(0, playerHpRatio));
+        String playerBarColor = playerHpRatio > 0.5 ? "#cc3333" : playerHpRatio > 0.25 ? "#cc8800" : "#880000";
+        hpBar.setStyle("-fx-accent: " + playerBarColor + ";");
+
+        if (game.player.getShield() > 0) {
+            shieldLabel.setText("🛡  " + game.player.getShield());
+            shieldBar.setProgress(Math.min(1.0, game.player.getShield() / UIConstants.SHIELD_MAX));
+            shieldLabel.setVisible(true);
+            shieldBar.setVisible(true);
+        } else {
+            shieldLabel.setVisible(false);
+            shieldBar.setVisible(false);
+        }
+
+        // ── Düşman (sayı + progress bar) ────────────────────────────────────
+        String enemyName = (game.enemy.isBoss() ? "⚠️  " : "") + game.enemy.getName();
+        enemyHpLabel.setText(enemyName
+            + "\nHP: " + game.enemy.getHp() + " / " + game.enemy.getMaxHp()
+            + "\nATK: " + game.enemy.getAttackDamage());
+
+        double enemyHpRatio = (double) game.enemy.getHp() / game.enemy.getMaxHp();
+        enemyHpBar.setProgress(Math.max(0, enemyHpRatio));
+        // Bar rengi: yüksek HP kırmızı, düşük HP sarı/koyu kırmızı
+        String barColor = enemyHpRatio > 0.5 ? "#cc3333" : enemyHpRatio > 0.25 ? "#cc8800" : "#880000";
+        enemyHpBar.setStyle("-fx-accent: " + barColor + ";");
+
+        if (!game.lastEvent.isEmpty()) log.setText(game.lastEvent);
+
+        updateHandUI();
+    }
+
+    private void updateEnemyVisuals() {
+        EnemyDesign design = new BaseEnemyDesign();
+        if (game.enemy.isBoss()) design = new BossBorderDecorator(design, game.level);
+
+        enemyVoid.setStyle(
+            "-fx-background-color: black; " +
+            "-fx-background-radius: 50%; " +
+            design.getBorderStyle() +
+            design.getEffect()
+        );
+    }
+
+    public static void main(String[] args) { launch(); }
 }
