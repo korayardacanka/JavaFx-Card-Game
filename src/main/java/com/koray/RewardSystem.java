@@ -14,12 +14,12 @@ public class RewardSystem implements Observer {
         if (event instanceof EnemyDeathEvent e) {
             if (e.enemy.isBoss()) {
                 game.player.addGold(50);
-                game.lastEvent = "💀 BOSS öldürüldü! +50 gold, +20 exp";
+                game.lastEvent = "💀 BOSS öldürüldü! +50 gold";
             } else {
                 int goldGain = 10 + (game.level * 3);
-                int expGain  = 5  + game.level;
+               
                 game.player.addGold(goldGain);
-                game.lastEvent = "Enemy öldürüldü! +" + goldGain + " gold, +" + expGain + " exp";
+                game.lastEvent = "Enemy öldürüldü! +" + goldGain + " gold " ;
             }
         }
     }
