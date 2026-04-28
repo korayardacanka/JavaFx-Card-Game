@@ -150,7 +150,7 @@ public class Main extends Application {
         handBox.setAlignment(Pos.CENTER);
         log = new Label();
         log.setStyle("-fx-text-fill: #ffdd88; -fx-font-size:13px;");
-        Button endTurn = new Button("End Turn");
+        Button endTurn = new Button("End Turn(E)");
         endTurn.setStyle("-fx-font-size:14px; -fx-padding: 6 20;");
         endTurn.setOnAction(e -> handleEndTurn());
         VBox bottomPanel = new VBox(6, handBox, endTurn, log);
@@ -176,12 +176,20 @@ public class Main extends Application {
     }
 
     private void setScene(Pane root) {
-        Scene scene = new Scene(root,
-            Screen.getPrimary().getVisualBounds().getWidth(),
-            Screen.getPrimary().getVisualBounds().getHeight());
-        primaryStage.setScene(scene);
-        primaryStage.setMaximized(true);
-    }
+    Scene scene = new Scene(root,
+        Screen.getPrimary().getVisualBounds().getWidth(),
+        Screen.getPrimary().getVisualBounds().getHeight()
+    );
+
+    scene.setOnKeyPressed(e -> {
+        if (e.getCode() == javafx.scene.input.KeyCode.E) {
+            handleEndTurn();
+        }
+    });
+
+    primaryStage.setScene(scene);
+    primaryStage.setMaximized(true);
+}
 
     private void resetPlayerDeck() {
         game.player.deck.clear(); game.player.hand.clear(); game.player.discard.clear();
