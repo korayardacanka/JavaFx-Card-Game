@@ -28,19 +28,13 @@ public class CardFactory {
     public static List<Card> allCardsForLevel(int level) {
         List<Card> all = new ArrayList<>();
         all.add(makeScaled("Damage", 1, 10, 15, level, (v,t) -> new DamageEffect(v)));
-        if (level >= 5)
-            all.add(makeScaled("Dagger", 2, 10, 20, level - 5, (v,t) -> new DamageEffect(v)));
         all.add(makeScaled("Shield", 1, 10, 10, level, (v,t) -> new ShieldEffect(v)));
         all.add(makeScaled("Heal",   2, 20, 10, level, (v,t) -> new HealEffect(v)));
         all.add(makeScaled("Poison", 1, 15,  3, level, (v,t) -> new PoisonEffect(v)));
         all.add(makeScaled("Burn",   2, 20,  8, level, (v,t) -> new BurnEffect(v)));
-        all.add(makeScaled("Freeze", 2, 25,  1, level, (v,t) -> new FreezeEffect(Math.max(1, v/3))));
+        all.add(make("Freeze", 2, 25, level,new FreezeEffect(1)));
         return all;
     }
-
-    /** @deprecated allCardsForLevel(int) kullan */
-    @Deprecated
-    public static List<Card> allCards() { return allCardsForLevel(1); }
 
     public static Card randomCard() {
         List<Card> pool = allCardsForLevel(1);
