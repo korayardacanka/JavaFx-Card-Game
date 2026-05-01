@@ -17,15 +17,14 @@ import java.util.Collections;
 import java.util.Objects;
 
 public class Main extends Application {
-
+    private int currentBiome = 1;
     private Game  game         = new Game();
     private Stage primaryStage;
     private boolean turnLocked = false; // animasyon sırasında çift tur engeli
-
     private ImageView playerView  = new ImageView();
     private StackPane enemyVoid   = new StackPane();
     private Timeline  playerAnim  = new Timeline();
-
+    private ImageView background = new ImageView();
     private Label goldLabel    = new Label();
     private Label enemyHpLabel = new Label();
     private Label lvlLabel     = new Label();
@@ -93,12 +92,10 @@ public class Main extends Application {
         double W = Screen.getPrimary().getVisualBounds().getWidth();
         double H = Screen.getPrimary().getVisualBounds().getHeight();
 
-        ImageView background = new ImageView(new Image(Objects.requireNonNull(
-                getClass().getResource("/assets/game_background_4.png")).toExternalForm()));
+        updateBackground();
         background.setFitWidth(W);
         background.setFitHeight(H);
         background.setPreserveRatio(false);
-
         playerView = new ImageView();
         playerAnim = new Timeline();
         playerView.setFitWidth(UIConstants.PLAYER_VIEW_WIDTH);
@@ -362,6 +359,7 @@ public class Main extends Application {
         Enemy dead = game.enemy;
         game.eventBus.publish(new EnemyDeathEvent(dead));
         game.level++;
+        updateBackground();
         game.enemy = EnemyFactory.createEnemy(game.level);
         if (game.level % 2 == 0) game.maxEnergy++;
 
@@ -454,6 +452,78 @@ public class Main extends Application {
         enemyVoid.setStyle("-fx-background-color: black; -fx-background-radius: 50%; "
             + design.getBorderStyle() + design.getEffect());
     }
+private void updateBackground() {
 
+   int biome = ((game.level - 1) / 5) % 4 + 1;
+
+    if (biome == currentBiome && background.getImage() != null)
+        return;
+
+    currentBiome = biome;
+
+    String path;
+
+    switch (biome) {
+        case 1:
+            path = "/assets/game_background_1.png";
+            break;
+
+        case 2:
+            path = "/assets/game_background_2.png";
+            break;
+
+        case 3:
+            path = "/assets/game_background_3.png";
+            break;
+
+        case 4:
+            path = "/assets/game_background_4.png";
+            break;
+
+        default:
+            path = "/assets/game_background_4.png";
+    }
+
+    Image newImage = new Image(
+        Objects.requireNonNull(
+            getClass().getResourceAsStream(path)
+        )
+    );
+
+    // ilk yükleme
+    if (background.getImage() == null) {
+        background.setImage(newImage);
+        return;
+    }
+
+    crossFadeBackground(newImage);
+}
+
+private void crossFadeBackground(Image newImage) {
+
+    ImageView overlay = new ImageView(newImage);
+
+    overlay.setFitWidth(background.getFitWidth());
+    overlay.setFitHeight(background.getFitHeight());
+
+    overlay.setOpacity(0);
+
+    StackPane root = (StackPane) primaryStage.getScene().getRoot();
+
+    root.getChildren().add(1, overlay);
+
+    FadeTransition fadeIn =
+        new FadeTransition(Duration.seconds(1.5), overlay);
+
+    fadeIn.setFromValue(0);
+    fadeIn.setToValue(1);
+
+    fadeIn.setOnFinished(e -> {
+        background.setImage(newImage);
+        root.getChildren().remove(overlay);
+    });
+
+    fadeIn.play();
+}
     public static void main(String[] args) { launch(); }
 }
