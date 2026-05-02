@@ -134,6 +134,7 @@ public class BattleController {
         if (!game.enemy.isAlive()) {
             onUpdateUI.run();
             handleEnemyDeath();
+            startNewTurn();
             turnLocked = false;
             return;
         }
@@ -154,6 +155,7 @@ public class BattleController {
         if (!game.enemy.isAlive()) {
             onUpdateUI.run();
             handleEnemyDeath();
+            startNewTurn();
             turnLocked = false;
             return;
         }
