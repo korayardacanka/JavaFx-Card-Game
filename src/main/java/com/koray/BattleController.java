@@ -195,7 +195,7 @@ public class BattleController {
         // Prepare shop inventory
         game.currentShopCards = CardFactory.shopCards(game.level, game.player);
         if (dead.isBoss()) {
-            game.currentBossRelics = RelicFactory.bossRelics(game.level);
+            game.currentBossRelics = RelicFactory.bossRelics(game.level, game.ownedRelics);
         } else {
             game.currentBossRelics.clear();
         }

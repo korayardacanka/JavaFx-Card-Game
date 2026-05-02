@@ -1,12 +1,11 @@
 package com.koray;
+
 /**
  * Observer that keeps the JavaFX UI in sync with game state.
- * Subscribes to the EventBus and calls Main.updateUI() on every event,
- * regardless of the event type.
- *
- * This "refresh everything on any event" approach is simple and
- * correct, but rebuilds the entire UI on each call. For a larger
- * project, per-event targeted updates would be more efficient.
+ * Subscribes to the EventBus and reacts to game events:
+ *   - RelicEvent  → shows a toast notification with the purchased relic's name,
+ *                   then does a full UI refresh (so the relic bar updates too)
+ *   - All others  → full UI refresh only
  */
 public class UIObserver implements Observer {
 
@@ -18,7 +17,7 @@ public class UIObserver implements Observer {
 
     /**
      * @param game the active game state
-     * @param main the Main instance whose updateUI() will be called
+     * @param main the Main instance whose UI methods will be called
      */
     public UIObserver(Game game, Main main) {
         this.game = game;
@@ -26,13 +25,17 @@ public class UIObserver implements Observer {
     }
 
     /**
-     * Called by the EventBus whenever any game event is published.
-     * Triggers a full UI refresh to reflect the latest game state.
+     * Called by the EventBus whenever a game event is published.
+     * Distinguishes RelicEvent to trigger the toast notification,
+     * then always calls updateUI() to keep labels and bars current.
      *
-     * @param event the event that occurred (not inspected here)
+     * @param event the event that occurred
      */
     @Override
     public void onEvent(GameEvent event) {
+        if (event instanceof RelicEvent re) {
+            main.showRelicToast(re.relic);
+        }
         main.updateUI();
     }
 }

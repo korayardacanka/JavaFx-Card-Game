@@ -6,35 +6,13 @@ import javafx.scene.layout.*;
 import javafx.stage.Stage;
 import java.util.*;
 
-/**
- * JavaFX shop window that opens after each enemy kill.
- * Displays two sections:
- *   1. Normal cards  — available for purchase at any time
- *   2. Boss relics   — only shown after a boss kill; cleared when the window closes
- *
- * The shop is a modal-style secondary Stage. Only one instance can be
- * open at a time — opening a new one closes the previous one.
- *
- * Note: this class uses a static Stage reference (currentStage) to
- * enforce the single-window constraint. This is a known limitation
- * and would benefit from being moved to an instance-based approach.
- */
 public class Shop {
 
-    /** Reference to the currently open shop window, if any. */
     private static Stage currentStage;
 
-    /**
-     * Opens the shop window for the given game state.
-     * If a shop is already open, it is closed first.
-     * Card and relic lists are read from game.currentShopCards
-     * and game.currentBossRelics respectively.
-     *
-     * @param game the active game state
-     */
     public static void open(Game game) {
 
-        // Close any previously open shop window
+        // Önceki shop açıksa kapat
         if (currentStage != null && currentStage.isShowing()) {
             currentStage.close();
         }
@@ -51,7 +29,7 @@ public class Shop {
 
         Label info = new Label();
 
-        // ── Normal cards section ──────────────────────────────────────────
+        // ── NORMAL KARTLAR ──────────────────────────
         List<Card> shopCards = game.currentShopCards.isEmpty()
             ? CardFactory.shopCards(game.level, game.player)
             : game.currentShopCards;
@@ -80,7 +58,7 @@ public class Shop {
             }
         }
 
-        // ── Boss relic section (only shown after a boss kill) ─────────────
+        // ── BOSS RELICLERİ (sadece boss sonrası) ────
         if (!game.currentBossRelics.isEmpty()) {
             Label sep = new Label("── Boss Ödülleri ──");
             sep.setStyle("-fx-font-weight:bold; -fx-text-fill:#cc7700;");
@@ -104,7 +82,7 @@ public class Shop {
                     if (game.player.spendGold(relic.price)) {
                         relic.applyOnBuy(game.player, game);
                         game.ownedRelics.add(relic);
-                        game.eventBus.publish(new RelicEvent());
+                        game.eventBus.publish(new RelicEvent(relic));
                         info.setText("✨ Alındı: " + relic.name);
                         goldLabel.setText("Gold: " + game.player.getGold());
                         btn.setDisable(true);
@@ -115,7 +93,6 @@ public class Shop {
                 root.getChildren().add(btn);
             }
 
-            // Clear boss relics when the shop window is closed
             stage.setOnHidden(e -> game.currentBossRelics.clear());
         }
 
@@ -128,11 +105,6 @@ public class Shop {
         stage.show();
     }
 
-    /**
-     * Closes the shop window if one is currently open.
-     * Called at the start of each End Turn to prevent the shop
-     * from remaining open during combat.
-     */
     public static void closeShop() {
         if (currentStage != null && currentStage.isShowing()) {
             currentStage.close();

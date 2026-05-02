@@ -31,6 +31,7 @@ public class Main extends Application {
     private int     currentBiome  = 1;
     private Game    game          = new Game();
     private Stage   primaryStage;
+    private StackPane gameRoot;   // root StackPane kept for toast overlays
 
     // ── Extracted collaborators ───────────────────────────────────────────────
     private DeckManager       deckManager;
@@ -50,6 +51,7 @@ public class Main extends Application {
     private Label hpLabel      = new Label();
     private Label shieldLabel  = new Label();
     private Label statusLabel  = new Label();
+    private Label relicsLabel  = new Label();  // shows owned relic icons in the HUD
 
     private ProgressBar hpBar      = new ProgressBar();
     private ProgressBar shieldBar  = new ProgressBar();
@@ -177,7 +179,12 @@ public class Main extends Application {
         shieldBar = new ProgressBar(0.0);
         shieldBar.setStyle("-fx-accent: #3388cc;"); shieldBar.setPrefWidth(160);
 
-        VBox leftPanel = new VBox(5, hpLabel, hpBar, shieldLabel, shieldBar, energyLabel, goldLabel);
+        relicsLabel = new Label();
+        relicsLabel.setStyle("-fx-text-fill: #ffe866; -fx-font-size:16px;");
+        relicsLabel.setWrapText(true);
+        relicsLabel.setMaxWidth(170);
+
+        VBox leftPanel = new VBox(5, hpLabel, hpBar, shieldLabel, shieldBar, energyLabel, goldLabel, relicsLabel);
         leftPanel.setPadding(new Insets(14));
         leftPanel.setStyle("-fx-background-color: rgba(0,0,0,0.52); -fx-background-radius: 0 10 10 0;");
 
@@ -223,6 +230,7 @@ public class Main extends Application {
         ui.getChildren().addAll(playerSlot, enemySlot, topHUD, leftPanel, rightPanel, bottomPanel);
 
         StackPane root = new StackPane(background, ui);
+        gameRoot = root;
         setScene(root);
         updateUI();
     }
@@ -290,6 +298,20 @@ public class Main extends Application {
         statusLabel.setText(sb.toString().trim());
 
         if (!game.lastEvent.isEmpty()) log.setText(game.lastEvent);
+
+        // Show owned relic icons in the left HUD panel
+        if (game.ownedRelics.isEmpty()) {
+            relicsLabel.setText("");
+        } else {
+            StringBuilder relicIcons = new StringBuilder();
+            for (RelicItem r : game.ownedRelics) {
+                // Extract the leading emoji from the relic name (first "word")
+                String[] parts = r.name.split(" ", 2);
+                relicIcons.append(parts[0]).append(" ");
+            }
+            relicsLabel.setText(relicIcons.toString().trim());
+        }
+
         updateHandUI();
     }
 
@@ -388,6 +410,45 @@ public class Main extends Application {
         }
 
         crossFadeBackground(newImage);
+    }
+
+    /**
+     * Displays a temporary toast notification when a relic is purchased.
+     * A label with the relic's name floats in the top-center of the screen,
+     * fades in, stays for 1.5 seconds, then fades out and is removed.
+     *
+     * @param relic the relic that was just purchased
+     */
+    public void showRelicToast(RelicItem relic) {
+        if (gameRoot == null) return;
+
+        Label toast = new Label("✨ " + relic.name + " alındı!");
+        toast.setStyle(
+            "-fx-background-color: rgba(30,20,0,0.82);" +
+            "-fx-text-fill: #ffe866;" +
+            "-fx-font-size: 18px;" +
+            "-fx-font-weight: bold;" +
+            "-fx-padding: 10 24;" +
+            "-fx-background-radius: 12;"
+        );
+        toast.setOpacity(0);
+
+        // Position at top-center
+        javafx.scene.layout.StackPane.setAlignment(toast, javafx.geometry.Pos.TOP_CENTER);
+        javafx.scene.layout.StackPane.setMargin(toast, new javafx.geometry.Insets(80, 0, 0, 0));
+        gameRoot.getChildren().add(toast);
+
+        // Fade in → pause → fade out → remove
+        FadeTransition fadeIn = new FadeTransition(Duration.millis(300), toast);
+        fadeIn.setToValue(1.0);
+
+        PauseTransition pause = new PauseTransition(Duration.millis(1500));
+
+        FadeTransition fadeOut = new FadeTransition(Duration.millis(400), toast);
+        fadeOut.setToValue(0.0);
+        fadeOut.setOnFinished(e -> gameRoot.getChildren().remove(toast));
+
+        new SequentialTransition(fadeIn, pause, fadeOut).play();
     }
 
     /**
