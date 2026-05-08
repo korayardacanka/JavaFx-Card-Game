@@ -30,12 +30,31 @@ public class EventBus {
     }
 
     /**
+     * Removes a previously registered observer.
+     * No-op if the observer was never subscribed.
+     *
+     * @param o the observer to remove
+     */
+    public void unsubscribe(Observer o) {
+        observers.remove(o);
+    }
+
+    /**
+     * Removes all registered observers at once.
+     * Call this before discarding an EventBus instance (e.g. on game restart)
+     * to prevent stale observer references from keeping the old game graph alive.
+     */
+    public void clearObservers() {
+        observers.clear();
+    }
+
+    /**
      * Dispatches an event synchronously to all registered observers.
      *
      * @param event the event to broadcast
      */
     public void publish(GameEvent event) {
-        for (Observer o : observers) {
+        for (Observer o : new ArrayList<>(observers)) { // snapshot → safe if a handler unsubscribes
             o.onEvent(event);
         }
     }

@@ -103,6 +103,8 @@ public class Main extends Application {
      * Called both at first start and on restart.
      */
     private void initializeGame() {
+        if (game != null && game.eventBus != null) {
+    game.eventBus.clearObservers();}
         game = new Game();
         game.eventBus = new EventBus();
         game.eventBus.subscribe(new RewardSystem(game));
