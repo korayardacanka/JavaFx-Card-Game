@@ -101,10 +101,17 @@ public class Main extends Application {
     /**
      * Initialises a fresh game and wires all collaborators together.
      * Called both at first start and on restart.
+     *
+     * Clears the old EventBus observers first to prevent stale UIObserver/
+     * RewardSystem references keeping the previous game graph alive (memory leak).
      */
     private void initializeGame() {
+        // Eski bus'ın abonelerini temizle — UIObserver içindeki Main referansı
+        // GC root'a bağlı kalmadan eski game graph'ının collect edilmesini sağlar.
         if (game != null && game.eventBus != null) {
-    game.eventBus.clearObservers();}
+            game.eventBus.clearObservers();
+        }
+
         game = new Game();
         game.eventBus = new EventBus();
         game.eventBus.subscribe(new RewardSystem(game));
@@ -242,13 +249,22 @@ public class Main extends Application {
         lbl.setStyle("-fx-text-fill: white; -fx-font-size:13px;");
     }
 
-    /** Creates and sets the scene, binding the E key to handleEndTurn. */
+    /**
+     * Creates and sets the scene, binding the E key to handleEndTurn.
+     *
+     * Guard conditions:
+     *   - battleController != null : start ekranında henüz set edilmemiş olabilir
+     *   - game.player.isAlive()    : death ekranında E sessize alınır,
+     *                                arka planda bozuk state mutasyonu önlenir
+     */
     private void setScene(Pane root) {
         Scene scene = new Scene(root,
             Screen.getPrimary().getVisualBounds().getWidth(),
             Screen.getPrimary().getVisualBounds().getHeight());
         scene.setOnKeyPressed(e -> {
-            if (e.getCode() == javafx.scene.input.KeyCode.E) {
+            if (e.getCode() == javafx.scene.input.KeyCode.E
+                    && battleController != null
+                    && game.player.isAlive()) {
                 battleController.handleEndTurn();
             }
         });
@@ -457,14 +473,19 @@ public class Main extends Application {
      * Smoothly transitions to a new background image over 1.5 seconds.
      * An overlay ImageView fades in on top of the existing background,
      * then the base image is swapped and the overlay removed.
+     *
+     * Safe cast: returns early if the scene root is not a StackPane
+     * (e.g. start or death screen), preventing a ClassCastException.
      */
     private void crossFadeBackground(Image newImage) {
+        // Güvenli cast — start/death ekranında root VBox olabilir
+        if (!(primaryStage.getScene().getRoot() instanceof StackPane root)) return;
+
         ImageView overlay = new ImageView(newImage);
         overlay.setFitWidth(background.getFitWidth());
         overlay.setFitHeight(background.getFitHeight());
         overlay.setOpacity(0);
 
-        StackPane root = (StackPane) primaryStage.getScene().getRoot();
         root.getChildren().add(1, overlay);
 
         FadeTransition fadeIn = new FadeTransition(Duration.seconds(1.5), overlay);
