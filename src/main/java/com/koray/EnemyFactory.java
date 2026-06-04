@@ -33,8 +33,8 @@ public class EnemyFactory {
         Enemy e = new Enemy();
 
         if (isBoss) {
-            e.setHp((int)(baseHp * 1.5));
-            e.setAttackDamage((int)(baseDamage * 1.5));
+            e.setHp((int)(baseHp * 1.3));
+            e.setAttackDamage((int)(baseDamage * 1.2));
             e.setBoss(true);
             e.setName("BOSS (Lv " + level + ")");
         } else {

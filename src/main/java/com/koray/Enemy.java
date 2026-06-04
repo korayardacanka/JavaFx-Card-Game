@@ -94,7 +94,7 @@ public class Enemy {
      * @param dmg damage to deal
      */
     public void takeDamage(int dmg) {
-        if (dmg > 0) hp -= dmg;
+        if (dmg > 0)  hp = Math.max(0, hp - dmg);
     }
 
     /**

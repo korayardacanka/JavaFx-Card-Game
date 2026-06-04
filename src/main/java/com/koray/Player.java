@@ -47,18 +47,20 @@ public class Player {
      *
      * @param dmg damage to deal
      */
-    public void takeDamage(int dmg) {
-        if (dmg <= 0) return;
-        if (shield > 0) {
-            shield -= dmg;
-            if (shield < 0) {
-                hp += shield; // shield went negative → subtract the overflow from HP
-                shield = 0;
-            }
-        } else {
-            hp -= dmg;
+   public void takeDamage(int dmg) {
+    if (dmg <= 0) return;
+    if (shield > 0) {
+        shield -= dmg;
+        if (shield < 0) {
+            hp += shield; 
+            shield = 0;
         }
+    } else {
+        hp -= dmg;
     }
+    
+    hp = Math.max(0, hp);
+}
 
     /**
      * Restores HP, capped at max HP.
