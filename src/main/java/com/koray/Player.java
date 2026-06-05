@@ -7,7 +7,7 @@ import java.util.*;
  *
  * Manages four resource pools:
  *   - HP     : health points; reaches 0 → game over
- *   - Shield : absorbs incoming damage before HP; resets each turn
+ *   - Shield : absorbs incoming damage before HP; 
  *   - Energy : spent when playing cards; restored at turn start
  *   - Gold   : spent in the shop; earned from enemy kills
  *
@@ -93,11 +93,6 @@ public class Player {
      */
     public void addShield(int amount) {
         if (amount > 0) shield += amount;
-    }
-
-    /** Removes all shield. Typically called at the start of each turn. */
-    public void resetShield() {
-        shield = 0;
     }
 
     // ── Energy ────────────────────────────────────────────────────────────
