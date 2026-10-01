@@ -13,6 +13,13 @@ import java.util.function.Consumer;
  */
 public class BattleController {
 
+    public enum BattleState {
+        PLAYER_TURN,
+        ENEMY_TURN,
+        ANIMATING,
+        GAME_OVER
+    }
+
     private final Game             game;
     private final DeckManager      deckManager;
     private final AnimationPlayer  animator;
@@ -32,10 +39,13 @@ public class BattleController {
     private final Consumer<String> onLog;
 
     /**
-     * Guards against double-turn-ending during animations.
-     * true = a turn is currently in progress; input should be ignored.
+     * Single source of truth for the combat flow.
+     * PLAYER_TURN: player may act or end turn.
+     * ENEMY_TURN: enemy is attacking / resolving status effects.
+     * ANIMATING: UI input is blocked while an animation callback is in progress.
+     * GAME_OVER: player death screen is active; no combat actions allowed.
      */
-    private boolean turnLocked = false;
+    private BattleState battleState = BattleState.PLAYER_TURN;
 
     /**
      * @param game          the active game state
@@ -65,8 +75,20 @@ public class BattleController {
         this.onLog         = onLog;
     }
 
-    /** Returns true while a turn animation is in progress (input should be blocked). */
-    public boolean isTurnLocked() { return turnLocked; }
+    /** Returns the current combat state. */
+    public BattleState getState() { return battleState; }
+
+    /** Returns true while input should be blocked for combat flow reasons. */
+    public boolean isTurnLocked() { return battleState != BattleState.PLAYER_TURN; }
+
+    /** Returns true when the player is allowed to act in the current turn. */
+    public boolean canPlayerAct() {
+        return battleState == BattleState.PLAYER_TURN && game.player.isAlive();
+    }
+
+    private void setState(BattleState newState) {
+        battleState = newState;
+    }
 
     // ── Card playing ──────────────────────────────────────────────────────────
 
@@ -79,7 +101,10 @@ public class BattleController {
      * @param cardBox the card's VBox (used for the play animation)
      */
     public void handleCardPlay(Card c, VBox cardBox) {
+        if (!canPlayerAct()) return;
         if (!game.player.spendEnergy(c.cost)) return;
+
+        setState(BattleState.ANIMATING);
 
         int enemyHpBefore = game.enemy.getHp();
         c.use(game.player, game.enemy);
@@ -108,7 +133,10 @@ public class BattleController {
             animator.playCardEffect(cardBox,
                 () -> enemyAnimator.playDeath(this::handleEnemyDeath));
         } else {
-            animator.playCardEffect(cardBox, onUpdateUI);
+            animator.playCardEffect(cardBox, () -> {
+                setState(BattleState.PLAYER_TURN);
+                onUpdateUI.run();
+            });
         }
     }
 
@@ -126,8 +154,8 @@ public class BattleController {
      * Ignores calls while turnLocked is true (prevents double-ending).
      */
     public void handleEndTurn() {
-        if (turnLocked) return;
-        turnLocked = true;
+        if (!canPlayerAct()) return;
+        setState(BattleState.ENEMY_TURN);
         Shop.closeShop();
 
         // 1. Apply status effects (poison/burn damage, freeze log)
@@ -140,11 +168,13 @@ public class BattleController {
         // 2. Did enemy die from status effects?
         if (!game.enemy.isAlive()) {
             onUpdateUI.run();
+            setState(BattleState.ANIMATING);
             enemyAnimator.playDeath(this::finishEnemyDeathTurn);
             return;
         }
 
         if (game.enemy.getHp() < enemyHpBeforeStatus) {
+            setState(BattleState.ANIMATING);
             enemyAnimator.playHurt(this::resolveEnemyTurnAttack);
         } else {
             resolveEnemyTurnAttack();
@@ -169,6 +199,7 @@ public class BattleController {
         // 5. Did relic retaliation kill the enemy?
         if (!game.enemy.isAlive()) {
             onUpdateUI.run();
+            setState(BattleState.ANIMATING);
             if (enemyWasFrozen) {
                 enemyAnimator.playDeath(this::finishEnemyDeathTurn);
             } else {
@@ -191,9 +222,9 @@ public class BattleController {
             } else {
                 startNewTurn();
             }
-            turnLocked = false;
         };
         if (damageTaken > 0) {
+            setState(BattleState.ANIMATING);
             animator.playAnimation("_HURT_", UIConstants.HURT_FRAME_COUNT, false, () -> {
                 animator.playAnimation("_IDLE_", UIConstants.IDLE_FRAME_COUNT, true, null);
                 finishTurn.run();
@@ -208,7 +239,6 @@ public class BattleController {
     private void finishEnemyDeathTurn() {
         handleEnemyDeath();
         startNewTurn();
-        turnLocked = false;
     }
 
     // ── Enemy / player death ──────────────────────────────────────────────────
@@ -221,7 +251,10 @@ public class BattleController {
      * Safe to call multiple times — exits immediately if the enemy is still alive.
      */
     private void handleEnemyDeath() {
+        if (battleState == BattleState.GAME_OVER) return;
         if (game.enemy.isAlive()) return; // double-call guard
+
+        setState(BattleState.PLAYER_TURN);
 
         Enemy dead = game.enemy;
         game.eventBus.publish(new EnemyDeathEvent(dead));
@@ -249,6 +282,7 @@ public class BattleController {
      */
     private void checkPlayerDeath() {
         if (!game.player.isAlive()) {
+            setState(BattleState.GAME_OVER);
             animator.playAnimation("_DIE_", UIConstants.DEATH_FRAME_COUNT, false, onPlayerDeath);
         }
     }
@@ -263,6 +297,7 @@ public class BattleController {
      *   - Clears the last event log
      */
     private void startNewTurn() {
+        setState(BattleState.PLAYER_TURN);
         game.player.restoreEnergy(game.maxEnergy);
         game.lastEvent = "";
 

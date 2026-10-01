@@ -35,8 +35,12 @@ public class Main extends Application {
     // ── Application state ────────────────────────────────────────────────────
     private int     currentBiome  = 1;
     private Game    game          = new Game();
-    private Stage   primaryStage;
+    private static Stage primaryStage;
     private StackPane gameRoot;   // root StackPane kept for toast overlays
+
+    public static Stage getPrimaryStage() {
+        return primaryStage;
+    }
 
     // ── Extracted collaborators ───────────────────────────────────────────────
     private DeckManager       deckManager;
@@ -64,11 +68,12 @@ public class Main extends Application {
     private ProgressBar enemyHpBar = new ProgressBar();
 
     private HBox handBox = new HBox(UIConstants.HAND_BOX_SPACING);
+    private Button endTurnButton;
 
     // =========================================================================
     @Override
     public void start(Stage stage) {
-        this.primaryStage = stage;
+        primaryStage = stage;
         showStartScreen();
     }
 
@@ -90,13 +95,17 @@ public class Main extends Application {
 
     /** Shows the game-over screen with restart and menu buttons. */
     private void showDeathScreen() {
+        if (animator != null) animator.stop();
+        if (enemyAnimator != null) enemyAnimator.stop();
+        Shop.closeShop();
+
         VBox root = new VBox(20);
         root.setStyle(UIConstants.STYLE_CENTER_PADDING + UIConstants.STYLE_DARK_BG);
         Label title = new Label("ÖLDÜN!");
         title.setStyle(UIConstants.STYLE_TITLE_LARGE + UIConstants.STYLE_RED_TEXT);
         Button restartBtn = new Button("Tekrar Oyna");
         restartBtn.setStyle(UIConstants.STYLE_BUTTON_LARGE);
-        restartBtn.setOnAction(e -> { initializeGame(); startGame(); });
+        restartBtn.setOnAction(e -> { Shop.closeShop(); initializeGame(); startGame(); });
         Button menuBtn = new Button("Ana Menü");
         menuBtn.setStyle(UIConstants.STYLE_BUTTON_LARGE);
         menuBtn.setOnAction(e -> showStartScreen());
@@ -136,6 +145,8 @@ public class Main extends Application {
      * Called after initializeGame().
      */
     private void startGame() {
+        Shop.closeShop();
+        if (animator != null) animator.stop();
         if (enemyAnimator != null) enemyAnimator.stop();
         enemyAnimator = null;
         deckManager.resetPlayerDeck();
@@ -223,11 +234,15 @@ public class Main extends Application {
         handBox.setAlignment(Pos.CENTER);
         log = new Label();
         log.setStyle("-fx-text-fill: #ffdd88; -fx-font-size:13px;");
-        Button endTurn = new Button("End Turn (E)");
-        endTurn.setStyle("-fx-font-size:14px; -fx-padding: 6 20;");
-        endTurn.setOnAction(e -> battleController.handleEndTurn());
+        endTurnButton = new Button("End Turn (E)");
+        endTurnButton.setStyle("-fx-font-size:14px; -fx-padding: 6 20;");
+        endTurnButton.setOnAction(e -> {
+            if (battleController != null && battleController.canPlayerAct()) {
+                battleController.handleEndTurn();
+            }
+        });
 
-        VBox bottomPanel = new VBox(6, handBox, endTurn, log);
+        VBox bottomPanel = new VBox(6, handBox, endTurnButton, log);
         bottomPanel.setAlignment(Pos.CENTER);
         bottomPanel.setPadding(new Insets(8));
         bottomPanel.setStyle("-fx-background-color: rgba(0,0,0,0.55);");
@@ -275,7 +290,7 @@ public class Main extends Application {
         scene.setOnKeyPressed(e -> {
             if (e.getCode() == javafx.scene.input.KeyCode.E
                     && battleController != null
-                    && game.player.isAlive()) {
+                    && battleController.canPlayerAct()) {
                 battleController.handleEndTurn();
             }
         });
@@ -327,6 +342,9 @@ public class Main extends Application {
         statusLabel.setText(sb.toString().trim());
 
         if (!game.lastEvent.isEmpty()) log.setText(game.lastEvent);
+        if (endTurnButton != null && battleController != null) {
+            endTurnButton.setDisable(!battleController.canPlayerAct());
+        }
 
         // Show owned relic icons in the left HUD panel
         if (game.ownedRelics.isEmpty()) {
@@ -383,7 +401,11 @@ public class Main extends Application {
         name.setStyle("-fx-font-weight:bold; -fx-font-size:13px;");
         Label cost = new Label("Cost: " + c.cost);
         Button play = new Button("Play");
-        play.setOnAction(e -> battleController.handleCardPlay(c, box));
+        play.setDisable(battleController.isTurnLocked());
+        play.setOnAction(e -> {
+            if (battleController.isTurnLocked()) return;
+            battleController.handleCardPlay(c, box);
+        });
         box.getChildren().addAll(name, cost, play);
         return box;
     }

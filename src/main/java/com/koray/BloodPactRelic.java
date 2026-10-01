@@ -23,8 +23,13 @@ class BloodPactRelic extends RelicItem {
      */
     @Override
     public void applyOnBuy(Player player, Game game) {
+        if (player.getHp() > 30) {
+            game.lastEvent = "❌ Kan Antlaşması için HP ≤ 30 olmalı.";
+            return;
+        }
+
         player.takeDamage(30);
         game.maxEnergy += 2;
-        game.lastEvent = "🩸 Kan Antlaşması! -30 HP, Max Enerji +" + game.maxEnergy;
+        game.lastEvent = "🩸 Kan Antlaşması! -30 HP, Max Enerji +2";
     }
 }

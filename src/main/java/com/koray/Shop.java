@@ -3,6 +3,7 @@ package com.koray;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
+import javafx.stage.Modality;
 import javafx.stage.Stage;
 import java.util.*;
 
@@ -18,6 +19,8 @@ public class Shop {
         }
 
         Stage stage = new Stage();
+        stage.initOwner(Main.getPrimaryStage());
+        stage.initModality(Modality.WINDOW_MODAL);
         currentStage = stage;
 
         VBox root = new VBox(12);
@@ -67,6 +70,8 @@ public class Shop {
             for (RelicItem relic : game.currentBossRelics) {
                 boolean alreadyOwned = game.ownedRelics.stream()
                     .anyMatch(r -> r.name.equals(relic.name));
+                boolean bloodPactLocked = relic instanceof BloodPactRelic
+                    && game.player.getHp() > 30;
 
                 Button btn = new Button(
                     relic.name + "  |  " + relic.description +
@@ -77,8 +82,16 @@ public class Shop {
                     btn.setText(btn.getText() + "  [Sahipsin]");
                     btn.setDisable(true);
                 }
+                if (bloodPactLocked) {
+                    btn.setText(btn.getText() + "  [HP ≤ 30 gerekli]");
+                    btn.setDisable(true);
+                }
 
                 btn.setOnAction(e -> {
+                    if (bloodPactLocked) {
+                        info.setText("❌ Kan Antlaşması için HP ≤ 30 olmalı.");
+                        return;
+                    }
                     if (game.player.spendGold(relic.price)) {
                         relic.applyOnBuy(game.player, game);
                         game.ownedRelics.add(relic);
@@ -93,16 +106,40 @@ public class Shop {
                 root.getChildren().add(btn);
             }
 
-            stage.setOnHidden(e -> game.currentBossRelics.clear());
         }
 
         Button closeBtn = new Button("Kapat");
-        closeBtn.setOnAction(e -> stage.close());
+        closeBtn.setOnAction(e -> requestCloseWithConfirmation(stage, game));
         root.getChildren().addAll(info, closeBtn);
+
+        stage.setOnCloseRequest(e -> {
+            e.consume();
+            requestCloseWithConfirmation(stage, game);
+        });
 
         stage.setScene(new Scene(root, 420, 380));
         stage.setTitle("SHOP - Level " + game.level);
         stage.show();
+    }
+
+    private static void requestCloseWithConfirmation(Stage stage, Game game) {
+        if (game.currentBossRelics.isEmpty()) {
+            stage.close();
+            return;
+        }
+
+        Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
+        confirm.initOwner(stage);
+        confirm.initModality(Modality.WINDOW_MODAL);
+        confirm.setTitle("Boss ödülü kaybolacak");
+        confirm.setHeaderText("Kapatmak istediğinize emin misiniz?");
+        confirm.setContentText("Bu işlem, mevcut boss relic'leri siler. Devam etmek istiyor musunuz?");
+
+        Optional<ButtonType> result = confirm.showAndWait();
+        if (result.isPresent() && result.get() == ButtonType.OK) {
+            game.currentBossRelics.clear();
+            stage.close();
+        }
     }
 
     public static void closeShop() {

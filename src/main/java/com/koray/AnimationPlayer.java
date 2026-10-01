@@ -6,6 +6,10 @@ import javafx.scene.image.ImageView;
 import javafx.scene.layout.VBox;
 import javafx.util.Duration;
 
+import java.io.InputStream;
+import java.util.HashMap;
+import java.util.Map;
+
 /**
  * Handles all sprite and card animations.
  * Wraps the player's ImageView and its Timeline so that animation
@@ -20,6 +24,9 @@ public class AnimationPlayer {
 
     /** Reference to the owner so we can load resources from the classpath. */
     private final Object resourceOwner;
+
+    /** Caches all loaded sprite frames keyed by resource path. */
+    private final Map<String, Image> spriteCache = new HashMap<>();
 
     /**
      * @param playerView    the sprite ImageView to animate
@@ -39,8 +46,15 @@ public class AnimationPlayer {
      * @param loop       if true, loops indefinitely; if false, plays once
      * @param onFinish   optional callback run after a non-looping animation completes
      */
+    public void stop() {
+        if (playerAnim != null) {
+            playerAnim.stop();
+            playerAnim.getKeyFrames().clear();
+        }
+    }
+
     public void playAnimation(String prefix, int frameCount, boolean loop, Runnable onFinish) {
-        playerAnim.stop();
+        stop();
         playerAnim.getKeyFrames().clear();
 
         for (int i = 0; i < frameCount; i++) {
@@ -48,9 +62,8 @@ public class AnimationPlayer {
             String fn = "assets/" + prefix + String.format("%03d", frame) + ".png";
             playerAnim.getKeyFrames().add(new KeyFrame(
                 Duration.millis(UIConstants.ANIMATION_FRAME_MS * frame), e -> {
-                    java.io.InputStream is =
-                        resourceOwner.getClass().getClassLoader().getResourceAsStream(fn);
-                    if (is != null) playerView.setImage(new Image(is));
+                    Image image = getCachedSprite(fn);
+                    if (image != null) playerView.setImage(image);
                 }
             ));
         }
@@ -58,6 +71,23 @@ public class AnimationPlayer {
         playerAnim.setCycleCount(loop ? Timeline.INDEFINITE : 1);
         playerAnim.setOnFinished((!loop && onFinish != null) ? e -> onFinish.run() : null);
         playerAnim.play();
+    }
+
+    private Image getCachedSprite(String resourcePath) {
+        if (!spriteCache.containsKey(resourcePath)) {
+            InputStream is = resourceOwner.getClass().getClassLoader().getResourceAsStream(resourcePath);
+            if (is == null) return null;
+            try {
+                spriteCache.put(resourcePath, new Image(is));
+            } finally {
+                try {
+                    is.close();
+                } catch (Exception ignored) {
+                    // Best effort cleanup; cached Image already owns its pixel data.
+                }
+            }
+        }
+        return spriteCache.get(resourcePath);
     }
 
     /**
