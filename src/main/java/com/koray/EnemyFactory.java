@@ -3,45 +3,54 @@ package com.koray;
 /**
  * Factory class responsible for creating Enemy instances.
  *
- * Enemy stats (HP and attack damage) scale linearly with the game level.
- * Every 5th level spawns a boss: 1.5× base HP, 1.5× base attack,
- * and a distinct name/flag so the UI and reward system can distinguish it.
+ * Four enemy families each progress through four phases and a boss phase.
+ * HP and attack scale with level and phase, with an additional multiplier
+ * for each family's level-5 boss.
  *
  * All enemy creation must go through this factory — the Enemy class
  * exposes only package-private setters to enforce this constraint.
  */
 public class EnemyFactory {
 
+    private static final String[] FAMILIES = {
+        "Kanlı Şövalye", "Bataklık Cadısı", "Kül Ejderi", "Buz Revenantı"
+    };
+
+    private static final String[] PHASES = {
+        "I. Faz", "II. Faz", "III. Faz", "IV. Faz", "Boss Fazı"
+    };
+
     /**
      * Creates and fully configures an enemy for the given level.
      *
-     * Scaling formulas:
-     *   base HP     = 40 + (level × 12)
-     *   base attack = 8  + (level × 2)
-     *   boss multiplier = ×1.5 on both stats
+    * Family changes every five levels; the fifth level in each family is its boss.
+    * HP and attack increase by level and phase, then receive boss multipliers.
      *
      * @param level the current game level (1-based)
      * @return a ready-to-use Enemy instance
      */
     public static Enemy createEnemy(int level) {
 
-        int baseHp     = 40 + (level * 12);
-        int baseDamage = 8  + (level * 2);
-
-        boolean isBoss = (level % 5 == 0);
+        int family = Math.min((level - 1) / 5, FAMILIES.length - 1);
+        int phase = (level - 1) % 5;
+        boolean isBoss = phase == 4;
+        int baseHp = 40 + level * 12 + phase * 8;
+        int baseDamage = 8 + level * 2 + phase * 2;
 
         Enemy e = new Enemy();
+        e.setFamily(family);
+        e.setPhase(phase + 1);
 
         if (isBoss) {
-            e.setHp((int)(baseHp * 1.3));
-            e.setAttackDamage((int)(baseDamage * 1.2));
+            e.setHp((int)(baseHp * 1.45));
+            e.setAttackDamage((int)(baseDamage * 1.3));
             e.setBoss(true);
-            e.setName("BOSS (Lv " + level + ")");
+            e.setName(FAMILIES[family] + " - " + PHASES[phase]);
         } else {
             e.setHp(baseHp);
             e.setAttackDamage(baseDamage);
             e.setBoss(false);
-            e.setName("Enemy (Lv " + level + ")");
+            e.setName(FAMILIES[family] + " - " + PHASES[phase]);
         }
 
         return e;

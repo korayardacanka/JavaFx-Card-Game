@@ -16,6 +16,7 @@ public class BattleController {
     private final Game             game;
     private final DeckManager      deckManager;
     private final AnimationPlayer  animator;
+    private final EnemyAnimationPlayer enemyAnimator;
 
     // ── Callbacks into Main (UI layer) ────────────────────────────────────────
     /** Called whenever game state changes and the UI needs to refresh. */
@@ -40,6 +41,7 @@ public class BattleController {
      * @param game          the active game state
      * @param deckManager   deck operations (draw, reset)
      * @param animator      sprite and card animations
+    * @param enemyAnimator shape-based enemy animations
      * @param onUpdateUI    callback: refresh all UI labels and bars
      * @param onPlayerDeath callback: show the death screen
      * @param onEnemyDeath  callback: update enemy visuals and open shop
@@ -48,6 +50,7 @@ public class BattleController {
     public BattleController(Game game,
                             DeckManager deckManager,
                             AnimationPlayer animator,
+                            EnemyAnimationPlayer enemyAnimator,
                             Runnable onUpdateUI,
                             Runnable onPlayerDeath,
                             Runnable onEnemyDeath,
@@ -55,6 +58,7 @@ public class BattleController {
         this.game          = game;
         this.deckManager   = deckManager;
         this.animator      = animator;
+        this.enemyAnimator = enemyAnimator;
         this.onUpdateUI    = onUpdateUI;
         this.onPlayerDeath = onPlayerDeath;
         this.onEnemyDeath  = onEnemyDeath;
@@ -85,6 +89,7 @@ public class BattleController {
         // Fire onEnemyDamaged hooks for all owned relics
         int dealtDamage = enemyHpBefore - game.enemy.getHp();
         if (dealtDamage > 0) {
+            enemyAnimator.playHurt(null);
             for (RelicItem r : game.ownedRelics) {
                 r.onEnemyDamaged(game.player, game.enemy, game, dealtDamage);
             }
@@ -100,7 +105,8 @@ public class BattleController {
 
         // Animate the card flying off, then update UI or handle enemy death
         if (!game.enemy.isAlive()) {
-            animator.playCardEffect(cardBox, this::handleEnemyDeath);
+            animator.playCardEffect(cardBox,
+                () -> enemyAnimator.playDeath(this::handleEnemyDeath));
         } else {
             animator.playCardEffect(cardBox, onUpdateUI);
         }
@@ -125,6 +131,7 @@ public class BattleController {
         Shop.closeShop();
 
         // 1. Apply status effects (poison/burn damage, freeze log)
+        int enemyHpBeforeStatus = game.enemy.getHp();
         String statusLog = game.enemy.processStatusEffects();
         if (!statusLog.isEmpty()) {
             game.lastEvent = statusLog;
@@ -133,13 +140,21 @@ public class BattleController {
         // 2. Did enemy die from status effects?
         if (!game.enemy.isAlive()) {
             onUpdateUI.run();
-            handleEnemyDeath();
-            startNewTurn();
-            turnLocked = false;
+            enemyAnimator.playDeath(this::finishEnemyDeathTurn);
             return;
         }
 
-        // 3. Enemy attacks
+        if (game.enemy.getHp() < enemyHpBeforeStatus) {
+            enemyAnimator.playHurt(this::resolveEnemyTurnAttack);
+        } else {
+            resolveEnemyTurnAttack();
+        }
+    }
+
+    private void resolveEnemyTurnAttack() {
+        boolean enemyWasFrozen = game.enemy.isFrozen();
+
+        // Enemy attacks
         int playerHpBefore = game.player.getHp();
         game.enemy.attack(game.player);
         int damageTaken = playerHpBefore - game.player.getHp();
@@ -154,24 +169,46 @@ public class BattleController {
         // 5. Did relic retaliation kill the enemy?
         if (!game.enemy.isAlive()) {
             onUpdateUI.run();
-            handleEnemyDeath();
-            startNewTurn();
-            turnLocked = false;
+            if (enemyWasFrozen) {
+                enemyAnimator.playDeath(this::finishEnemyDeathTurn);
+            } else {
+                enemyAnimator.playAttack(
+                    () -> enemyAnimator.playDeath(this::finishEnemyDeathTurn));
+            }
             return;
         }
 
-        // 6. Play hurt animation; start next turn or show death screen in callback
-        animator.playAnimation("_HURT_", UIConstants.HURT_FRAME_COUNT, false, () -> {
-            animator.playAnimation("_IDLE_", UIConstants.IDLE_FRAME_COUNT, true, null);
+        if (enemyWasFrozen) {
+            enemyAnimator.playIdle();
+        } else {
+            enemyAnimator.playAttack(null);
+        }
+
+        // Only react to a hit when the enemy actually removed player HP.
+        Runnable finishTurn = () -> {
             if (!game.player.isAlive()) {
                 checkPlayerDeath();
             } else {
                 startNewTurn();
             }
             turnLocked = false;
-        });
+        };
+        if (damageTaken > 0) {
+            animator.playAnimation("_HURT_", UIConstants.HURT_FRAME_COUNT, false, () -> {
+                animator.playAnimation("_IDLE_", UIConstants.IDLE_FRAME_COUNT, true, null);
+                finishTurn.run();
+            });
+        } else {
+            finishTurn.run();
+        }
 
         onUpdateUI.run();
+    }
+
+    private void finishEnemyDeathTurn() {
+        handleEnemyDeath();
+        startNewTurn();
+        turnLocked = false;
     }
 
     // ── Enemy / player death ──────────────────────────────────────────────────

@@ -19,6 +19,8 @@ public class Enemy {
     private int     attackDamage = 10;
     private boolean boss         = false;
     private String  name         = "Enemy";
+    private int     family       = 0;
+    private int     phase        = 1;
 
     // ── Status effect counters ─────────────────────────────────────────────
     private int poisonStacks = 0; // damage per turn; accumulates (does not decay)
@@ -31,6 +33,8 @@ public class Enemy {
     public int     getAttackDamage() { return attackDamage; }
     public boolean isBoss()          { return boss; }
     public String  getName()         { return name; }
+    public int     getFamily()       { return family; }
+    public int     getPhase()        { return phase; }
     public boolean isAlive()         { return hp > 0; }
     public int     getPoisonStacks() { return poisonStacks; }
     public int     getBurnStacks()   { return burnStacks; }
@@ -44,6 +48,8 @@ public class Enemy {
     void setAttackDamage(int dmg) { this.attackDamage = dmg; }
     void setBoss(boolean boss)    { this.boss = boss; }
     void setName(String name)     { this.name = name; }
+    void setFamily(int family)    { this.family = family; }
+    void setPhase(int phase)      { this.phase = phase; }
 
     // ── Status effect application ─────────────────────────────────────────
 
