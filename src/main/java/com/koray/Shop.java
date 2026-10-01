@@ -11,7 +11,7 @@ public class Shop {
 
     private static Stage currentStage;
 
-    public static void open(Game game) {
+    public static void open(Game game, Stage owner) {
 
         // Önceki shop açıksa kapat
         if (currentStage != null && currentStage.isShowing()) {
@@ -19,7 +19,7 @@ public class Shop {
         }
 
         Stage stage = new Stage();
-        stage.initOwner(Main.getPrimaryStage());
+        stage.initOwner(owner);
         stage.initModality(Modality.WINDOW_MODAL);
         currentStage = stage;
 
@@ -71,7 +71,7 @@ public class Shop {
                 boolean alreadyOwned = game.ownedRelics.stream()
                     .anyMatch(r -> r.name.equals(relic.name));
                 boolean bloodPactLocked = relic instanceof BloodPactRelic
-                    && game.player.getHp() > 30;
+                    && game.player.getHp() <= 30;
 
                 Button btn = new Button(
                     relic.name + "  |  " + relic.description +
@@ -83,13 +83,13 @@ public class Shop {
                     btn.setDisable(true);
                 }
                 if (bloodPactLocked) {
-                    btn.setText(btn.getText() + "  [HP ≤ 30 gerekli]");
+                    btn.setText(btn.getText() + "  [HP > 30 gerekli]");
                     btn.setDisable(true);
                 }
 
                 btn.setOnAction(e -> {
                     if (bloodPactLocked) {
-                        info.setText("❌ Kan Antlaşması için HP ≤ 30 olmalı.");
+                        info.setText("❌ Kan Antlaşması için HP > 30 olmalı.");
                         return;
                     }
                     if (game.player.spendGold(relic.price)) {
@@ -123,7 +123,8 @@ public class Shop {
     }
 
     private static void requestCloseWithConfirmation(Stage stage, Game game) {
-        if (game.currentBossRelics.isEmpty()) {
+        if (!hasPurchasableBossRelic(game)) {
+            game.currentBossRelics.clear();
             stage.close();
             return;
         }
@@ -140,6 +141,18 @@ public class Shop {
             game.currentBossRelics.clear();
             stage.close();
         }
+    }
+
+    static boolean hasPurchasableBossRelic(Game game) {
+        return game.currentBossRelics.stream().anyMatch(relic -> {
+            boolean alreadyOwned = game.ownedRelics.stream()
+                .anyMatch(owned -> owned.name.equals(relic.name));
+            boolean bloodPactLocked = relic instanceof BloodPactRelic
+                && game.player.getHp() <= 30;
+            return !alreadyOwned
+                && !bloodPactLocked
+                && game.player.getGold() >= relic.price;
+        });
     }
 
     public static void closeShop() {

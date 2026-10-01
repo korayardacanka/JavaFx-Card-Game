@@ -86,7 +86,7 @@ public class BattleController {
         return battleState == BattleState.PLAYER_TURN && game.player.isAlive();
     }
 
-    private void setState(BattleState newState) {
+    void setState(BattleState newState) {
         battleState = newState;
     }
 
@@ -252,6 +252,10 @@ public class BattleController {
      */
     private void handleEnemyDeath() {
         if (battleState == BattleState.GAME_OVER) return;
+        if (!game.player.isAlive()) {
+            checkPlayerDeath();
+            return;
+        }
         if (game.enemy.isAlive()) return; // double-call guard
 
         setState(BattleState.PLAYER_TURN);
@@ -281,10 +285,9 @@ public class BattleController {
      * Only executes if the player is actually dead.
      */
     private void checkPlayerDeath() {
-        if (!game.player.isAlive()) {
-            setState(BattleState.GAME_OVER);
-            animator.playAnimation("_DIE_", UIConstants.DEATH_FRAME_COUNT, false, onPlayerDeath);
-        }
+        if (game.player.isAlive() || battleState == BattleState.GAME_OVER) return;
+        setState(BattleState.GAME_OVER);
+        animator.playAnimation("_DIE_", UIConstants.DEATH_FRAME_COUNT, false, onPlayerDeath);
     }
 
     // ── New turn ──────────────────────────────────────────────────────────────
@@ -297,6 +300,10 @@ public class BattleController {
      *   - Clears the last event log
      */
     private void startNewTurn() {
+        if (!game.player.isAlive()) {
+            checkPlayerDeath();
+            return;
+        }
         setState(BattleState.PLAYER_TURN);
         game.player.restoreEnergy(game.maxEnergy);
         game.lastEvent = "";

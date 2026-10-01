@@ -35,12 +35,8 @@ public class Main extends Application {
     // ── Application state ────────────────────────────────────────────────────
     private int     currentBiome  = 1;
     private Game    game          = new Game();
-    private static Stage primaryStage;
+    private Stage primaryStage;
     private StackPane gameRoot;   // root StackPane kept for toast overlays
-
-    public static Stage getPrimaryStage() {
-        return primaryStage;
-    }
 
     // ── Extracted collaborators ───────────────────────────────────────────────
     private DeckManager       deckManager;
@@ -588,7 +584,7 @@ public class Main extends Application {
         updateBackground();
         updateEnemyVisuals();
         updateUI();
-        Shop.open(game);
+        Shop.open(game, primaryStage);
     }
 
     // ── Background ────────────────────────────────────────────────────────────

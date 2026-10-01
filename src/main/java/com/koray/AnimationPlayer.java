@@ -25,8 +25,8 @@ public class AnimationPlayer {
     /** Reference to the owner so we can load resources from the classpath. */
     private final Object resourceOwner;
 
-    /** Caches all loaded sprite frames keyed by resource path. */
-    private final Map<String, Image> spriteCache = new HashMap<>();
+    /** Caches all loaded sprite frames keyed by resource path for the application lifetime. */
+    private static final Map<String, Image> spriteCache = new HashMap<>();
 
     /**
      * @param playerView    the sprite ImageView to animate
@@ -35,6 +35,13 @@ public class AnimationPlayer {
     public AnimationPlayer(ImageView playerView, Object resourceOwner) {
         this.playerView    = playerView;
         this.resourceOwner = resourceOwner;
+    }
+
+    public void stop() {
+        if (playerAnim != null) {
+            playerAnim.stop();
+            playerAnim.getKeyFrames().clear();
+        }
     }
 
     /**
@@ -46,13 +53,6 @@ public class AnimationPlayer {
      * @param loop       if true, loops indefinitely; if false, plays once
      * @param onFinish   optional callback run after a non-looping animation completes
      */
-    public void stop() {
-        if (playerAnim != null) {
-            playerAnim.stop();
-            playerAnim.getKeyFrames().clear();
-        }
-    }
-
     public void playAnimation(String prefix, int frameCount, boolean loop, Runnable onFinish) {
         stop();
         playerAnim.getKeyFrames().clear();
