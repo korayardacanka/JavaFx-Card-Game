@@ -40,7 +40,7 @@ public class CardFactory {
     public static Card make(String name, int cost, int price, int level, CardEffect effect) {
         CardDesign design = new LevelDesignDecorator(
             new CardTypeDecorator(new BaseDesign(), effect), level);
-        return new Card(name, cost, price, level, effect, design);
+        return new Card(name, cost, price, effect, design);
     }
 
     /**
@@ -80,15 +80,6 @@ public class CardFactory {
         all.add(makeScaled("Burn",   2, 20,  8, level, (v,t) -> new BurnEffect(v)));
         all.add(make("Freeze", 2, 25, level, new FreezeEffect(1)));
         return all;
-    }
-
-    /**
-     * Returns a random card at tier 1 stats.
-     * Used for starter deck seeding or testing.
-     */
-    public static Card randomCard() {
-        List<Card> pool = allCardsForLevel(1);
-        return pool.get((int)(Math.random() * pool.size()));
     }
 
     /**

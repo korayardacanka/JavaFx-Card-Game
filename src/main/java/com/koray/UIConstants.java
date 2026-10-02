@@ -40,8 +40,11 @@ public class UIConstants {
     /** Preferred size (width and height) of the enemy container pane. */
     public static final double ENEMY_SIZE         = 180;
 
-    /** Preferred width of the HP and shield progress bars. */
-    public static final double PROGRESS_BAR_WIDTH = 200;
+    /** Preferred width of the HUD progress bars. */
+    public static final double PROGRESS_BAR_WIDTH = 160;
+
+    /** Maximum width of the side HUD panels and their wrapped contents. */
+    public static final double HUD_PANEL_WIDTH     = 170;
 
     // ── Game ──────────────────────────────────────────────────────────────
     /** Number of cards drawn into the player's hand at the start of each turn. */
@@ -69,24 +72,10 @@ public class UIConstants {
     /** Large padded button — used for primary action buttons on menu screens. */
     public static final String STYLE_BUTTON_LARGE      = "-fx-font-size: 24px; -fx-padding: 10 30;";
 
-    /** Horizontally centered alignment. */
-    public static final String STYLE_CENTER_ALIGNMENT  = "-fx-alignment:center;";
-
     /** Very dark background color — used for the death screen. */
     public static final String STYLE_DARK_BG           = "-fx-background-color:#1a1a1a;";
 
     /** Red text fill — used for the "YOU DIED" heading. */
     public static final String STYLE_RED_TEXT          = "-fx-text-fill: red;";
 
-    /** Red accent on the HP progress bar. */
-    public static final String STYLE_HP_BAR            = "-fx-accent: red;";
-
-    /** Blue accent on the shield progress bar. */
-    public static final String STYLE_SHIELD_BAR        = "-fx-accent: blue;";
-
-    /** Centered alignment with vertical padding — used for the top HUD panel. */
-    public static final String STYLE_TOP_PANEL         = "-fx-alignment:center; -fx-padding:10;";
-
-    /** Side padding — used for left/right info panels. */
-    public static final String STYLE_SIDE_PANEL        = "-fx-padding:20;";
 }
