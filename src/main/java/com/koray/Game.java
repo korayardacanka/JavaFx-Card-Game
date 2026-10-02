@@ -106,7 +106,7 @@ public class Game {
             level,
             player.getGold(),
             ownedRelics.stream().map(relic -> relic.name).toList(),
-            player.getDeck().size() + player.getHand().size() + player.getDiscard().size()
+            player.getTotalCardCount()
         );
     }
 }

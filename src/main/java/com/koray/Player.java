@@ -38,6 +38,7 @@ public class Player {
     public List<Card> getDeck() { return Collections.unmodifiableList(deck); }
     public List<Card> getHand() { return Collections.unmodifiableList(hand); }
     public List<Card> getDiscard() { return Collections.unmodifiableList(discard); }
+    public int getTotalCardCount() { return deck.size() + hand.size() + discard.size(); }
 
     /** Returns true while the player has at least 1 HP. */
     public boolean isAlive()   { return hp > 0; }

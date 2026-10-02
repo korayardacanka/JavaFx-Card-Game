@@ -80,4 +80,14 @@ public class PlayerTest {
             assertEquals(1, player.getDiscard().size());
         }
     }
+
+    @Test
+    public void totalCardCountIncludesDrawPileHandAndDiscard() {
+        Player player = new Player();
+        player.addToDeck(CardFactory.make("Deck", 1, 1, 1, new DamageEffect(1)));
+        player.addToHand(CardFactory.make("Hand", 1, 1, 1, new DamageEffect(1)));
+        player.addToDiscard(CardFactory.make("Discard", 1, 1, 1, new DamageEffect(1)));
+
+        assertEquals(3, player.getTotalCardCount());
+    }
 }
