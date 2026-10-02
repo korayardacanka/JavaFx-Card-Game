@@ -22,11 +22,33 @@ public class FactoryTest {
     public void shopCardsExcludeOwnedCardsAndReturnAtMostFour() {
         Player player = new Player();
         player.addToDeck(CardFactory.make("Damage", 1, 10, 1, new DamageEffect(15)));
+        player.addToHand(CardFactory.make("Damage", 1, 10, 1, new DamageEffect(15)));
 
         List<Card> cards = CardFactory.shopCards(1, player, new Random(5));
 
         assertTrue(cards.size() <= 4);
         assertFalse(cards.stream().anyMatch(card -> card.name.equals("Damage")));
+    }
+
+    @Test
+    public void shopAllowsASecondCopyAndCountsCopiesAcrossAllPiles() {
+        Player player = new Player();
+        player.addToDeck(CardFactory.make("Damage", 1, 10, 1, new DamageEffect(15)));
+        for (String name : List.of("Shield", "Heal", "Poison", "Burn", "Freeze")) {
+            Card first = CardFactory.make(name, 1, 10, 1, new ShieldEffect(1));
+            Card second = CardFactory.make(name, 1, 10, 1, new ShieldEffect(1));
+            player.addToHand(first);
+            player.addToDiscard(second);
+        }
+
+        List<Card> shopCards = CardFactory.shopCards(1, player, new Random(5));
+
+        assertEquals(1, shopCards.size());
+        assertEquals("Damage", shopCards.get(0).name);
+
+        player.addToDiscard(CardFactory.make("Damage", 1, 10, 1, new DamageEffect(15)));
+        assertFalse(CardFactory.shopCards(1, player, new Random(5)).stream()
+            .anyMatch(card -> card.name.equals("Damage")));
     }
 
     @Test

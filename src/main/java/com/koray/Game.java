@@ -36,6 +36,8 @@ public class Game {
 
     /** Number of permanent hand-size upgrades purchased (maximum 3). */
     private int handSizeUpgradeLevel;
+    private int cardRemovalCount;
+    private boolean cardRemovalUsedThisShop;
 
     /** Cards currently available for purchase in the shop. */
     private List<Card> currentShopCards = new ArrayList<>();
@@ -83,6 +85,47 @@ public class Game {
 
     public int getHandSizeUpgradeLevel() {
         return handSizeUpgradeLevel;
+    }
+
+    public int getCardRemovalCount() { return cardRemovalCount; }
+
+    public int getCardRemovalCost() {
+        return 50 + 25 * cardRemovalCount;
+    }
+
+    public boolean canRemoveCard() {
+        return !cardRemovalUsedThisShop
+            && player.getTotalCardCount() > 5
+            && player.getGold() >= getCardRemovalCost();
+    }
+
+    public boolean removeCardFromRun(Card card) {
+        if (!canRemoveCard()) return false;
+        int copiesToRemove = countCardOccurrences(card);
+        if (copiesToRemove == 0 || player.getTotalCardCount() - copiesToRemove < 5) {
+            return false;
+        }
+        if (!player.spendGold(getCardRemovalCost())) return false;
+        int removed = player.removeCardFromPiles(card);
+        if (removed == 0) {
+            player.addGold(getCardRemovalCost());
+            return false;
+        }
+        cardRemovalCount++;
+        cardRemovalUsedThisShop = true;
+        return true;
+    }
+
+    public void beginShopVisit() {
+        cardRemovalUsedThisShop = false;
+    }
+
+    private int countCardOccurrences(Card target) {
+        int count = 0;
+        for (Card card : player.getDeck()) if (card == target) count++;
+        for (Card card : player.getHand()) if (card == target) count++;
+        for (Card card : player.getDiscard()) if (card == target) count++;
+        return count;
     }
 
     public int getNextHandSizeUpgradeCost() {

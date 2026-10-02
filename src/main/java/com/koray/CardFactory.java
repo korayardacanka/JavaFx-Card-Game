@@ -99,7 +99,7 @@ public class CardFactory {
 
     /**
      * Builds the shop card selection for a given level.
-     * Filters out cards the player already owns, then picks up to 4
+     * Filters out cards the player already owns two copies of, then picks up to 4
      * unique cards (deduped by name) from the current and previous tiers.
      *
      * @param level  current game level
@@ -110,24 +110,24 @@ public class CardFactory {
     }
 
     public static List<Card> shopCards(int level, Player player, Random random) {
-        // Collect names of cards the player already owns across all piles
-        Set<String> owned = new HashSet<>();
-        for (Card c : player.getDeck())    owned.add(c.name);
-        for (Card c : player.getHand())    owned.add(c.name);
-        for (Card c : player.getDiscard()) owned.add(c.name);
+        // Count copies across all piles; the shop permits at most two per name.
+        Map<String, Integer> ownedCopies = new HashMap<>();
+        for (Card c : player.getDeck())    ownedCopies.merge(c.name, 1, Integer::sum);
+        for (Card c : player.getHand())    ownedCopies.merge(c.name, 1, Integer::sum);
+        for (Card c : player.getDiscard()) ownedCopies.merge(c.name, 1, Integer::sum);
 
         // Build a name-keyed map to prevent duplicate entries in the shop
         Map<String, Card> poolMap = new LinkedHashMap<>();
 
         for (Card c : allCardsForLevel(level)) {
-            if (!owned.contains(c.name)) poolMap.put(c.name, c);
+            if (ownedCopies.getOrDefault(c.name, 0) < 2) poolMap.put(c.name, c);
         }
 
         // Also include cards from the previous tier for variety
         if (level > 1) {
             int prevLevel = Math.max(1, level - GameRules.LEVELS_PER_TIER);
             for (Card c : allCardsForLevel(prevLevel)) {
-                if (!owned.contains(c.name)) poolMap.putIfAbsent(c.name, c);
+                if (ownedCopies.getOrDefault(c.name, 0) < 2) poolMap.putIfAbsent(c.name, c);
             }
         }
 
