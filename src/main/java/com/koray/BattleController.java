@@ -318,6 +318,6 @@ public class BattleController {
         }
 
         onUpdateUI.run();
-        onLog.accept("Yeni tur başladı.");
+        onLog.accept("New turn started.");
     }
 }

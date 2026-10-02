@@ -10,10 +10,10 @@ public class EnemyFactoryTest {
     @Test
     public void assignsFourFamiliesAndFivePhasesThroughLevelTwenty() {
         String[] families = {
-            "Kanlı Şövalye", "Bataklık Cadısı", "Kül Ejderi", "Buz Revenantı"
+            "Blood Knight", "Swamp Witch", "Ash Dragon", "Frost Revenant"
         };
         String[] phases = {
-            "I. Faz", "II. Faz", "III. Faz", "IV. Faz", "Boss Fazı"
+            "Phase I", "Phase II", "Phase III", "Phase IV", "Boss Phase"
         };
 
         for (int level = 1; level <= 20; level++) {
@@ -52,20 +52,20 @@ public class EnemyFactoryTest {
         relic.applyOnBuy(game.player, game);
         assertEquals(50, game.player.getHp());
         assertEquals(5, game.maxEnergy);
-        assertTrue(game.lastEvent.contains("Max Enerji +2"));
+        assertTrue(game.lastEvent.contains("+2 Max Energy"));
 
         game.player.takeDamage(20);
         relic.applyOnBuy(game.player, game);
         assertEquals(30, game.player.getHp());
         assertEquals(5, game.maxEnergy);
-        assertTrue(game.lastEvent.contains("HP > 30"));
+        assertTrue(game.lastEvent.contains("more than 30 HP"));
 
         game.player.heal(5);
         assertEquals(35, game.player.getHp());
         relic.applyOnBuy(game.player, game);
         assertEquals(5, game.player.getHp());
         assertEquals(7, game.maxEnergy);
-        assertTrue(game.lastEvent.contains("Max Enerji +2"));
+        assertTrue(game.lastEvent.contains("+2 Max Energy"));
     }
 
 }

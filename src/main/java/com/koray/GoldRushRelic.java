@@ -14,8 +14,8 @@ class GoldRushRelic extends RelicItem {
      * @param goldPerTurn gold to award at the start of each player turn
      */
     public GoldRushRelic(int goldPerTurn) {
-        super("💰 Altın Kese",
-              "Her tur başında +" + goldPerTurn + " gold",
+        super("💰 Gold Pouch",
+              "Gain +" + goldPerTurn + " gold at the start of each turn",
               45);
         this.goldPerTurn = goldPerTurn;
     }

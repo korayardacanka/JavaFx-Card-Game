@@ -16,8 +16,8 @@ class VampireRelic extends RelicItem {
      * @param ratio fraction of damage dealt to convert to healing (e.g. 0.20)
      */
     public VampireRelic(double ratio) {
-        super("🧛 Vampir Dişi",
-              "Verilen hasarın %" + (int)(ratio * 100) + "'i kadar HP kazan",
+        super("🧛 Vampire Fang",
+              "Heal for " + (int)(ratio * 100) + "% of damage dealt",
               65);
         this.ratio = ratio;
     }

@@ -13,11 +13,11 @@ package com.koray;
 public class EnemyFactory {
 
     private static final String[] FAMILIES = {
-        "Kanlı Şövalye", "Bataklık Cadısı", "Kül Ejderi", "Buz Revenantı"
+        "Blood Knight", "Swamp Witch", "Ash Dragon", "Frost Revenant"
     };
 
     private static final String[] PHASES = {
-        "I. Faz", "II. Faz", "III. Faz", "IV. Faz", "Boss Fazı"
+        "Phase I", "Phase II", "Phase III", "Phase IV", "Boss Phase"
     };
 
     /**

@@ -17,7 +17,7 @@ class MaxHpRelic extends RelicItem {
      */
     public MaxHpRelic(int amount) {
         super("❤️ Vital Stone",
-              "Max HP +" + amount + " (anında iyileşir)",
+              "Max HP +" + amount + " (heals immediately)",
               60);
         this.amount = amount;
     }

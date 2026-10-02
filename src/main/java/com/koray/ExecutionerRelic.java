@@ -9,8 +9,8 @@ package com.koray;
 class ExecutionerRelic extends RelicItem {
 
     public ExecutionerRelic() {
-        super("🪓 Celladın Baltası",
-              "Düşman HP < %30 iken +%50 hasar ver",
+        super("🪓 Executioner's Axe",
+              "Deal +50% damage when enemy HP is below 30%",
               70);
     }
 

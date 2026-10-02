@@ -15,8 +15,8 @@ class WrathRelic extends RelicItem {
      * @param bonusEnergy extra energy to add per turn when HP < 50%
      */
     public WrathRelic(int bonusEnergy) {
-        super("😡 Öfke Taşı",
-              "HP < %50 iken her tur +" + bonusEnergy + " enerji",
+        super("😡 Wrath Stone",
+              "Gain +" + bonusEnergy + " energy each turn while below 50% HP",
               50);
         this.bonusEnergy = bonusEnergy;
     }

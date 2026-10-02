@@ -74,18 +74,18 @@ public class Enemy {
 
         if (poisonStacks > 0) {
             takeDamage(poisonStacks);
-            log.append("☠ Zehir: -").append(poisonStacks).append(" HP  ");
+            log.append("☠ Poison: -").append(poisonStacks).append(" HP  ");
             // Poison does not decay — a separate mechanic is needed to cleanse it
         }
 
         if (burnStacks > 0) {
             takeDamage(burnStacks);
-            log.append("🔥 Yanma: -").append(burnStacks).append(" HP  ");
+            log.append("🔥 Burn: -").append(burnStacks).append(" HP  ");
             burnStacks = Math.max(0, burnStacks - 1); // burn decreases by 1 each turn
         }
 
         if (freezeTurns > 0) {
-            log.append("❄ Donuk (").append(freezeTurns).append(" tur)  ");
+            log.append("❄ Frozen (").append(freezeTurns).append(" turns)  ");
         }
 
         return log.toString().trim();

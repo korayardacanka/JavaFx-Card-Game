@@ -17,7 +17,7 @@ class PassiveShieldRelic extends RelicItem {
      */
     public PassiveShieldRelic(int shieldPerTurn) {
         super("🛡️ Iron Skin",
-              "Her tur başında +" + shieldPerTurn + " Shield",
+              "Gain +" + shieldPerTurn + " shield at the start of each turn",
               50);
         this.shieldPerTurn = shieldPerTurn;
     }

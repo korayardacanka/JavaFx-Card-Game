@@ -81,7 +81,7 @@ public class Main extends Application {
         root.setStyle(UIConstants.STYLE_CENTER_PADDING);
         Label title = new Label("CARD GAME");
         title.setStyle(UIConstants.STYLE_TITLE_LARGE);
-        Button startBtn = new Button("Başlat");
+        Button startBtn = new Button("Start");
         startBtn.setStyle(UIConstants.STYLE_BUTTON_LARGE);
         startBtn.setOnAction(e -> { initializeGame(); startGame(); });
         root.getChildren().addAll(title, startBtn);
@@ -97,12 +97,12 @@ public class Main extends Application {
 
         VBox root = new VBox(20);
         root.setStyle(UIConstants.STYLE_CENTER_PADDING + UIConstants.STYLE_DARK_BG);
-        Label title = new Label("ÖLDÜN!");
+        Label title = new Label("YOU DIED!");
         title.setStyle(UIConstants.STYLE_TITLE_LARGE + UIConstants.STYLE_RED_TEXT);
-        Button restartBtn = new Button("Tekrar Oyna");
+        Button restartBtn = new Button("Play Again");
         restartBtn.setStyle(UIConstants.STYLE_BUTTON_LARGE);
         restartBtn.setOnAction(e -> { Shop.closeShop(); initializeGame(); startGame(); });
-        Button menuBtn = new Button("Ana Menü");
+        Button menuBtn = new Button("Main Menu");
         menuBtn.setStyle(UIConstants.STYLE_BUTTON_LARGE);
         menuBtn.setOnAction(e -> showStartScreen());
         root.getChildren().addAll(title, restartBtn, menuBtn);
@@ -117,8 +117,8 @@ public class Main extends Application {
      * RewardSystem references keeping the previous game graph alive (memory leak).
      */
     private void initializeGame() {
-        // Eski bus'ın abonelerini temizle — UIObserver içindeki Main referansı
-        // GC root'a bağlı kalmadan eski game graph'ının collect edilmesini sağlar.
+        // Clear old bus subscribers so the previous game graph can be collected
+        // without the Main reference held by UIObserver remaining reachable.
         if (game != null && game.eventBus != null) {
             game.eventBus.clearObservers();
         }
@@ -272,9 +272,9 @@ public class Main extends Application {
      * Creates and sets the scene, binding the E key to handleEndTurn.
      *
      * Guard conditions:
-     *   - battleController != null : start ekranında henüz set edilmemiş olabilir
-     *   - game.player.isAlive()    : death ekranında E sessize alınır,
-     *                                arka planda bozuk state mutasyonu önlenir
+     *   - battleController != null : may not be set on the start screen
+     *   - game.player.isAlive()    : ignore E on the death screen to prevent
+     *                                invalid background state mutations
      */
     private void setScene(Pane root) {
         Scene scene = new Scene(root,
@@ -321,7 +321,7 @@ public class Main extends Application {
             (game.enemy.isBoss() ? "⚠️  " : "") + game.enemy.getName()
             + "\nHP: "  + game.enemy.getHp()  + " / " + game.enemy.getMaxHp()
             + "\nATK: " + game.enemy.getAttackDamage()
-            + (game.enemy.isFrozen() ? "  ❄ DONMUŞ" : "")
+            + (game.enemy.isFrozen() ? "  ❄ FROZEN" : "")
         );
 
         double er = (double) game.enemy.getHp() / game.enemy.getMaxHp();
@@ -619,7 +619,7 @@ public class Main extends Application {
     public void showRelicToast(RelicItem relic) {
         if (gameRoot == null) return;
 
-        Label toast = new Label("✨ " + relic.name + " alındı!");
+        Label toast = new Label("✨ " + relic.name + " acquired!");
         toast.setStyle(
             "-fx-background-color: rgba(30,20,0,0.82);" +
             "-fx-text-fill: #ffe866;" +
@@ -657,7 +657,7 @@ public class Main extends Application {
      * (e.g. start or death screen), preventing a ClassCastException.
      */
     private void crossFadeBackground(Image newImage) {
-        // Güvenli cast — start/death ekranında root VBox olabilir
+        // The root may be a VBox on the start or death screen.
         if (!(primaryStage.getScene().getRoot() instanceof StackPane root)) return;
 
         ImageView overlay = new ImageView(newImage);

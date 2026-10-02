@@ -16,8 +16,8 @@ class ThornRelic extends RelicItem {
      * @param thornDamage damage to deal back to the enemy when the player is hit
      */
     public ThornRelic(int thornDamage) {
-        super("🌵 Dikenli Zırh",
-              "Hasar alınca düşmana +" + thornDamage + " hasar yansıt",
+        super("🌵 Thorn Armor",
+              "Reflect +" + thornDamage + " damage to the enemy when hit",
               55);
         this.thornDamage = thornDamage;
     }
@@ -33,7 +33,7 @@ class ThornRelic extends RelicItem {
     public void onDamageTaken(Player player, Enemy enemy, Game game, int damage) {
         if (damage > 0) {
             enemy.takeDamage(thornDamage);
-            game.lastEvent += "  🌵 +" + thornDamage + " yansıma";
+            game.lastEvent += "  🌵 +" + thornDamage + " reflected";
         }
     }
 }

@@ -9,8 +9,8 @@ package com.koray;
 class BloodPactRelic extends RelicItem {
 
     public BloodPactRelic() {
-        super("🩸 Kan Antlaşması",
-              "Al: -30 HP  |  Kazanç: Max Enerji +2 (kalıcı)",
+        super("🩸 Blood Pact",
+              "Cost: -30 HP  |  Gain: +2 Max Energy (permanent)",
               0); // free to buy, but costs 30 HP
     }
 
@@ -24,12 +24,12 @@ class BloodPactRelic extends RelicItem {
     @Override
     public void applyOnBuy(Player player, Game game) {
         if (player.getHp() <= 30) {
-            game.lastEvent = "❌ Kan Antlaşması için HP > 30 olmalı.";
+            game.lastEvent = "❌ You need more than 30 HP to buy Blood Pact.";
             return;
         }
 
         player.takeDamage(30);
         game.maxEnergy += 2;
-        game.lastEvent = "🩸 Kan Antlaşması! -30 HP, Max Enerji +2";
+        game.lastEvent = "🩸 Blood Pact! -30 HP, +2 Max Energy";
     }
 }

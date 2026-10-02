@@ -14,7 +14,7 @@ public class Shop {
 
     public static void open(Game game, Stage owner) {
 
-        // Önceki shop açıksa kapat
+        // Close the previous shop if it is still open.
         if (currentStage != null && currentStage.isShowing()) {
             currentStage.close();
         }
@@ -33,39 +33,39 @@ public class Shop {
 
         Label info = new Label();
 
-        // ── NORMAL KARTLAR ──────────────────────────
+        // ── CARDS ────────────────────────────────────
         List<Card> shopCards = game.currentShopCards.isEmpty()
             ? CardFactory.shopCards(game.level, game.player)
             : game.currentShopCards;
 
         if (!shopCards.isEmpty()) {
-            Label cardTitle = new Label("── Kartlar ──");
+            Label cardTitle = new Label("── Cards ──");
             cardTitle.setStyle("-fx-font-weight:bold;");
             content.getChildren().add(cardTitle);
 
             for (Card card : shopCards) {
                 Button btn = new Button(
-                    card.name + "  |  Maliyet: " + card.cost +
-                    "  |  Fiyat: " + card.price + " gold"
+                    card.name + "  |  Cost: " + card.cost +
+                    "  |  Price: " + card.price + " gold"
                 );
                 btn.setMaxWidth(Double.MAX_VALUE);
                 btn.setOnAction(e -> {
                     if (game.player.spendGold(card.price)) {
                         game.player.deck.add(card);
-                        info.setText("✅ Alındı: " + card.name);
+                        info.setText("✅ Purchased: " + card.name);
                         goldLabel.setText("Gold: " + game.player.getGold());
                         btn.setDisable(true);
                     } else {
-                        info.setText("❌ Yeterli gold yok!");
+                        info.setText("❌ Not enough gold!");
                     }
                 });
                 content.getChildren().add(btn);
             }
         }
 
-        // ── BOSS RELICLERİ (sadece boss sonrası) ────
+        // ── BOSS RELICS (only after defeating a boss) ─
         if (!game.currentBossRelics.isEmpty()) {
-            Label sep = new Label("── Boss Ödülleri ──");
+            Label sep = new Label("── Boss Rewards ──");
             sep.setStyle("-fx-font-weight:bold; -fx-text-fill:#cc7700;");
             content.getChildren().add(sep);
 
@@ -82,28 +82,28 @@ public class Shop {
                 btn.setMaxWidth(Double.MAX_VALUE);
                 btn.setStyle("-fx-background-color:#fff3cd;");
                 if (alreadyOwned) {
-                    btn.setText(btn.getText() + "  [Sahipsin]");
+                    btn.setText(btn.getText() + "  [Owned]");
                     btn.setDisable(true);
                 }
                 if (bloodPactLocked) {
-                    btn.setText(btn.getText() + "  [HP > 30 gerekli]");
+                    btn.setText(btn.getText() + "  [Requires HP > 30]");
                     btn.setDisable(true);
                 }
 
                 btn.setOnAction(e -> {
                     if (bloodPactLocked) {
-                        info.setText("❌ Kan Antlaşması için HP > 30 olmalı.");
+                        info.setText("❌ You need more than 30 HP to buy Blood Pact.");
                         return;
                     }
                     if (game.player.spendGold(relic.price)) {
                         relic.applyOnBuy(game.player, game);
                         game.ownedRelics.add(relic);
                         game.eventBus.publish(new RelicEvent(relic));
-                        info.setText("✨ Alındı: " + relic.name);
+                        info.setText("✨ Purchased: " + relic.name);
                         goldLabel.setText("Gold: " + game.player.getGold());
                         btn.setDisable(true);
                     } else {
-                        info.setText("❌ Yeterli gold yok!");
+                        info.setText("❌ Not enough gold!");
                     }
                 });
                 content.getChildren().add(btn);
@@ -115,7 +115,7 @@ public class Shop {
         scrollPane.setFitToWidth(true);
         scrollPane.setPannable(true);
 
-        Button closeBtn = new Button("Kapat");
+        Button closeBtn = new Button("Close");
         closeBtn.setOnAction(e -> requestCloseWithConfirmation(stage, game));
         HBox closeRow = new HBox(closeBtn);
         closeRow.setAlignment(Pos.CENTER_RIGHT);
@@ -147,9 +147,9 @@ public class Shop {
         Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
         confirm.initOwner(stage);
         confirm.initModality(Modality.WINDOW_MODAL);
-        confirm.setTitle("Boss ödülü kaybolacak");
-        confirm.setHeaderText("Kapatmak istediğinize emin misiniz?");
-        confirm.setContentText("Bu işlem, mevcut boss relic'leri siler. Devam etmek istiyor musunuz?");
+        confirm.setTitle("Boss rewards will be lost");
+        confirm.setHeaderText("Are you sure you want to close?");
+        confirm.setContentText("This will discard the current boss relics. Continue?");
 
         Optional<ButtonType> result = confirm.showAndWait();
         if (result.isPresent() && result.get() == ButtonType.OK) {

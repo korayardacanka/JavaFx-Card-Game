@@ -16,7 +16,7 @@ class PassiveHealRelic extends RelicItem {
      */
     public PassiveHealRelic(int healPerTurn) {
         super("🌿 Regen Amulet",
-              "Her tur başında +" + healPerTurn + " HP",
+              "Restore +" + healPerTurn + " HP at the start of each turn",
               50);
         this.healPerTurn = healPerTurn;
     }
