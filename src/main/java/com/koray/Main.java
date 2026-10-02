@@ -155,6 +155,7 @@ public class Main extends Application {
             this::updateUI,
             this::showDeathScreen,
             this::onEnemyDeath,
+            Shop::closeShop,
             msg -> handView.setLog(msg)
         );
 

@@ -7,6 +7,9 @@ import javafx.scene.layout.VBox;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -134,12 +137,14 @@ public class BattleControllerTest {
         game.getPlayer().restoreEnergy(3);
         game.setEnemy(EnemyFactory.createEnemy(1));
         game.setEventBus(new EventBus());
-        BattleController controller = createController(game, () -> {});
+        CountDownLatch enemyDeathFinished = new CountDownLatch(1);
+        BattleController controller = createController(game, enemyDeathFinished::countDown);
         controller.setState(BattleController.BattleState.ANIMATING);
 
         game.getEnemy().takeDamage(game.getEnemy().getMaxHp());
         controller.handleEnemyDeath();
 
+        assertTrue(await(enemyDeathFinished));
         assertEquals(BattleController.BattleState.PLAYER_TURN, controller.getState());
     }
 
@@ -184,5 +189,14 @@ public class BattleControllerTest {
             onEnemyDeath,
             s -> {}
         );
+    }
+
+    private boolean await(CountDownLatch latch) {
+        try {
+            return latch.await(5, TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return false;
+        }
     }
 }

@@ -11,8 +11,8 @@ import java.util.List;
  * and the EventBus used to decouple subsystems.
  *
  * State is exposed through getters and purpose-specific mutation methods.
- * Combat flow and turn rules live in BattleController; other rules are
- * implemented by the relevant domain classes.
+ * Combat flow and turn rules live in CombatEngine; other rules are implemented
+ * by the relevant domain classes.
  */
 public class Game {
 

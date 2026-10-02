@@ -1,21 +1,12 @@
 package com.koray;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.function.Consumer;
 import javafx.scene.layout.VBox;
 
-/**
- * Controls all in-battle game logic.
- * Handles card playing, turn processing, enemy death, and player death.
- * Contains no JavaFX layout code — it only mutates game state and
- * triggers UI callbacks provided at construction time.
- *
- * Extracted from Main.java to separate game rules from UI code.
- */
+/** Adapts the UI-free combat engine to JavaFX animations and views. */
 public class BattleController {
 
-    public static final int HAND_REROLL_COST = 10;
+    public static final int HAND_REROLL_COST = CombatEngine.HAND_REROLL_COST;
 
     public enum BattleState {
         PLAYER_TURN,
@@ -24,43 +15,18 @@ public class BattleController {
         GAME_OVER
     }
 
-    private final Game             game;
-    private final DeckManager      deckManager;
-    private final AnimationPlayer  animator;
+    private final Game game;
+    private final CombatEngine engine;
+    private final AnimationPlayer animator;
     private final EnemyAnimationPlayer enemyAnimator;
-
-    // ── Callbacks into Main (UI layer) ────────────────────────────────────────
-    /** Called whenever game state changes and the UI needs to refresh. */
-    private final Runnable         onUpdateUI;
-
-    /** Called when the player's HP reaches 0. */
-    private final Runnable         onPlayerDeath;
-
-    /** Called after an enemy dies — provides new enemy visuals and opens shop. */
-    private final Runnable         onEnemyDeath;
-
-    /** Writes a message into the UI event log. */
+    private final Runnable onUpdateUI;
+    private final Runnable onPlayerDeath;
+    private final Runnable onEnemyDeath;
+    private final Runnable onTurnEnd;
     private final Consumer<String> onLog;
-
-    /**
-     * Single source of truth for the combat flow.
-     * PLAYER_TURN: player may act or end turn.
-     * ENEMY_TURN: enemy is attacking / resolving status effects.
-     * ANIMATING: UI input is blocked while an animation callback is in progress.
-     * GAME_OVER: player death screen is active; no combat actions allowed.
-     */
     private BattleState battleState = BattleState.PLAYER_TURN;
+    private VBox activeCardBox;
 
-    /**
-     * @param game          the active game state
-     * @param deckManager   deck operations (draw, reset)
-     * @param animator      sprite and card animations
-     * @param enemyAnimator shape-based enemy animations
-     * @param onUpdateUI    callback: refresh all UI labels and bars
-     * @param onPlayerDeath callback: show the death screen
-     * @param onEnemyDeath  callback: update enemy visuals and open shop
-     * @param onLog         callback: write a string to the event log label
-     */
     public BattleController(Game game,
                             DeckManager deckManager,
                             AnimationPlayer animator,
@@ -69,292 +35,150 @@ public class BattleController {
                             Runnable onPlayerDeath,
                             Runnable onEnemyDeath,
                             Consumer<String> onLog) {
-        this.game          = game;
-        this.deckManager   = deckManager;
-        this.animator      = animator;
+        this(game, deckManager, animator, enemyAnimator, onUpdateUI, onPlayerDeath,
+            onEnemyDeath, () -> {}, onLog);
+    }
+
+    public BattleController(Game game,
+                            DeckManager deckManager,
+                            AnimationPlayer animator,
+                            EnemyAnimationPlayer enemyAnimator,
+                            Runnable onUpdateUI,
+                            Runnable onPlayerDeath,
+                            Runnable onEnemyDeath,
+                            Runnable onTurnEnd,
+                            Consumer<String> onLog) {
+        this.game = game;
+        this.animator = animator;
         this.enemyAnimator = enemyAnimator;
-        this.onUpdateUI    = onUpdateUI;
+        this.onUpdateUI = onUpdateUI;
         this.onPlayerDeath = onPlayerDeath;
-        this.onEnemyDeath  = onEnemyDeath;
-        this.onLog         = onLog;
+        this.onEnemyDeath = onEnemyDeath;
+        this.onTurnEnd = onTurnEnd;
+        this.onLog = onLog;
+        this.engine = new CombatEngine(game, deckManager, new CombatListener() {
+            @Override
+            public void onStateChanged(CombatEngine.BattleState state) {
+                battleState = BattleState.valueOf(state.name());
+            }
+
+            @Override
+            public void onPlayerAttack(Card card, Runnable animationFinished) {
+                if (card.effect.isDirectDamage()) {
+                    animator.playAnimation("ATTACK_", UIConstants.ATTACK_FRAME_COUNT, false,
+                        () -> animator.playAnimation("_IDLE_", UIConstants.IDLE_FRAME_COUNT,
+                            true, null));
+                } else {
+                    animator.playAnimation("_IDLE_", UIConstants.IDLE_FRAME_COUNT, true, null);
+                }
+                if (activeCardBox == null) {
+                    animationFinished.run();
+                    return;
+                }
+                animator.playCardEffect(activeCardBox, () -> {
+                    activeCardBox = null;
+                    animationFinished.run();
+                });
+            }
+
+            @Override
+            public void onEnemyHit() {
+                enemyAnimator.playHurt(null);
+            }
+
+            @Override
+            public void onEnemyStatusHit(Runnable animationFinished) {
+                enemyAnimator.playHurt(animationFinished);
+            }
+
+            @Override
+            public void onEnemyAttack(Runnable animationFinished) {
+                if (game.getEnemy().isAlive()) {
+                    enemyAnimator.playAttack(null);
+                    animationFinished.run();
+                } else {
+                    enemyAnimator.playAttack(animationFinished);
+                }
+            }
+
+            @Override
+            public void onEnemyDeath(Enemy enemy, Runnable animationFinished) {
+                enemyAnimator.playDeath(animationFinished);
+            }
+
+            @Override
+            public void onPlayerHurt(Runnable animationFinished) {
+                animator.playAnimation("_HURT_", UIConstants.HURT_FRAME_COUNT, false, () -> {
+                    animator.playAnimation("_IDLE_", UIConstants.IDLE_FRAME_COUNT, true, null);
+                    animationFinished.run();
+                });
+            }
+
+            @Override
+            public void onPlayerDeath() {
+                animator.playAnimation("_DIE_", UIConstants.DEATH_FRAME_COUNT, false,
+                    BattleController.this.onPlayerDeath);
+            }
+
+            @Override
+            public void onNewTurn() {
+                enemyAnimator.playIdle();
+            }
+
+            @Override
+            public void onEnemyDefeated() {
+                BattleController.this.onEnemyDeath.run();
+            }
+
+            @Override
+            public void onTurnEnd() {
+                BattleController.this.onTurnEnd.run();
+            }
+
+            @Override
+            public void onUpdate() {
+                BattleController.this.onUpdateUI.run();
+            }
+
+            @Override
+            public void onLog(String message) {
+                BattleController.this.onLog.accept(message);
+            }
+        });
     }
 
-    /** Returns the current combat state. */
     public BattleState getState() { return battleState; }
-
-    /** Returns true while input should be blocked for combat flow reasons. */
     public boolean isTurnLocked() { return battleState != BattleState.PLAYER_TURN; }
-
-    /** Returns true when the player is allowed to act in the current turn. */
-    public boolean canPlayerAct() {
-        return battleState == BattleState.PLAYER_TURN && game.getPlayer().isAlive();
-    }
+    public boolean canPlayerAct() { return engine.canPlayerAct(); }
 
     void setState(BattleState newState) {
         battleState = newState;
+        engine.setState(CombatEngine.BattleState.valueOf(newState.name()));
     }
 
-    // ── Card playing ──────────────────────────────────────────────────────────
-
-    /**
-     * Plays a card: spends energy, applies the effect, fires relic hooks,
-     * moves the card to the discard pile, and starts the appropriate animation.
-     * Does nothing if the player lacks sufficient energy.
-     *
-     * @param c       the card being played
-     * @param cardBox the card's VBox (used for the play animation)
-     */
-    public void handleCardPlay(Card c, VBox cardBox) {
-        if (!canPlayerAct()) return;
-        if (!game.getPlayer().spendEnergy(c.cost)) return;
-
-        setState(BattleState.ANIMATING);
-
-        int enemyHpBefore = game.getEnemy().getHp();
-        c.use(game.getPlayer(), game.getEnemy());
-        game.getPlayer().moveHandCardToDiscard(c);
-
-        // Resolve bonuses before firing any relics that react to final damage.
-        int dealtDamage = enemyHpBefore - game.getEnemy().getHp();
-        if (dealtDamage > 0) {
-            enemyAnimator.playHurt(null);
-            DamagePipeline.resolve(game, dealtDamage);
-        }
-
-        // Play attack animation for damage cards, idle for others
-        if (c.effect.isDirectDamage()) {
-            animator.playAnimation("ATTACK_", UIConstants.ATTACK_FRAME_COUNT, false,
-                () -> animator.playAnimation("_IDLE_", UIConstants.IDLE_FRAME_COUNT, true, null));
-        } else {
-            animator.playAnimation("_IDLE_", UIConstants.IDLE_FRAME_COUNT, true, null);
-        }
-
-        // Animate the card flying off, then update UI or handle enemy death
-        if (!game.getEnemy().isAlive()) {
-            animator.playCardEffect(cardBox,
-                () -> enemyAnimator.playDeath(this::handleEnemyDeath));
-        } else {
-            animator.playCardEffect(cardBox, () -> {
-                setState(BattleState.PLAYER_TURN);
-                onUpdateUI.run();
-            });
-        }
+    public void handleCardPlay(Card card, VBox cardBox) {
+        if (!engine.canPlayerAct()) return;
+        activeCardBox = cardBox;
+        engine.playCard(card);
     }
 
-    /**
-     * Replaces the current hand with the same number of cards for
-     * {@link #HAND_REROLL_COST} gold.
-     */
     public void handleHandReroll() {
-        if (!canPlayerAct()) return;
-        if (game.getPlayer().getHand().isEmpty()) {
-            onLog.accept("There are no cards in hand to reroll.");
-            return;
-        }
-        if (!game.getPlayer().spendGold(HAND_REROLL_COST)) {
-            onLog.accept("Not enough gold to reroll your hand ("
-                + HAND_REROLL_COST + " gold required).");
-            return;
-        }
-
-        int cardsToDraw = game.getPlayer().getHand().size();
-        List<Card> oldHand = new java.util.ArrayList<>(game.getPlayer().getHand());
-        game.getPlayer().clearHand();
-        for (int i = 0; i < cardsToDraw; i++) {
-            deckManager.drawSingleCard();
-        }
-        game.getPlayer().moveHandToDiscard(oldHand);
-
-        onUpdateUI.run();
-        onLog.accept("Hand rerolled for " + HAND_REROLL_COST + " gold.");
+        engine.rerollHand();
     }
 
-    /** Draws newly available hand slots immediately after a hand-size upgrade. */
     void drawMissingHandCardsIfPlayerTurn() {
-        if (battleState != BattleState.PLAYER_TURN) return;
-
-        int cardsToDraw = game.getHandSizeLimit() - game.getPlayer().getHand().size();
-        for (int i = 0; i < cardsToDraw; i++) {
-            deckManager.drawSingleCard();
-        }
+        engine.drawMissingHandCardsIfPlayerTurn();
     }
 
-    // ── Turn processing ───────────────────────────────────────────────────────
-
-    /**
-     * Processes the end of the player's turn:
-     *   1. Apply status effects (poison, burn, freeze)
-     *   2. Check if enemy died from status damage
-     *   3. Enemy attacks the player
-     *   4. Fire onDamageTaken relic hooks
-     *   5. Check if relic retaliation killed the enemy
-     *   6. Play hurt animation, then start the next turn
-     *
-     * Ignores calls while turnLocked is true (prevents double-ending).
-     */
     public void handleEndTurn() {
-        if (!canPlayerAct()) return;
-        setState(BattleState.ENEMY_TURN);
-        Shop.closeShop();
-
-        // 1. Apply status effects (poison/burn damage, freeze log)
-        int enemyHpBeforeStatus = game.getEnemy().getHp();
-        String statusLog = game.getEnemy().processStatusEffects();
-        if (!statusLog.isEmpty()) {
-            game.getEventLog().set(statusLog);
-        }
-
-        // 2. Did enemy die from status effects?
-        if (!game.getEnemy().isAlive()) {
-            onUpdateUI.run();
-            setState(BattleState.ANIMATING);
-            enemyAnimator.playDeath(this::finishEnemyDeathTurn);
-            return;
-        }
-
-        if (game.getEnemy().getHp() < enemyHpBeforeStatus) {
-            setState(BattleState.ANIMATING);
-            enemyAnimator.playHurt(this::resolveEnemyTurnAttack);
-        } else {
-            resolveEnemyTurnAttack();
-        }
+        engine.endTurn();
     }
 
-    private void resolveEnemyTurnAttack() {
-        boolean enemyWasFrozen = game.getEnemy().isFrozen();
-
-        // Enemy attacks
-        int playerHpBefore = game.getPlayer().getHp();
-        game.getEnemy().attack(game.getPlayer());
-        int damageTaken = playerHpBefore - game.getPlayer().getHp();
-
-        // 4. Fire onDamageTaken hooks (e.g. ThornRelic reflects damage)
-        if (damageTaken > 0) {
-            for (RelicItem r : game.getOwnedRelics()) {
-                r.onDamageTaken(game.getPlayer(), game.getEnemy(), game, damageTaken);
-            }
-        }
-
-        // 5. Did relic retaliation kill the enemy?
-        if (!game.getEnemy().isAlive()) {
-            onUpdateUI.run();
-            setState(BattleState.ANIMATING);
-            if (enemyWasFrozen) {
-                enemyAnimator.playDeath(this::finishEnemyDeathTurn);
-            } else {
-                enemyAnimator.playAttack(
-                    () -> enemyAnimator.playDeath(this::finishEnemyDeathTurn));
-            }
-            return;
-        }
-
-        if (enemyWasFrozen) {
-            enemyAnimator.playIdle();
-        } else {
-            enemyAnimator.playAttack(null);
-        }
-
-        // Only react to a hit when the enemy actually removed player HP.
-        Runnable finishTurn = () -> {
-            if (!game.getPlayer().isAlive()) {
-                checkPlayerDeath();
-            } else {
-                startNewTurn();
-            }
-        };
-        if (damageTaken > 0) {
-            setState(BattleState.ANIMATING);
-            animator.playAnimation("_HURT_", UIConstants.HURT_FRAME_COUNT, false, () -> {
-                animator.playAnimation("_IDLE_", UIConstants.IDLE_FRAME_COUNT, true, null);
-                finishTurn.run();
-            });
-        } else {
-            finishTurn.run();
-        }
-
-        onUpdateUI.run();
-    }
-
-    private void finishEnemyDeathTurn() {
-        handleEnemyDeath();
-        startNewTurn();
-    }
-
-    // ── Enemy / player death ──────────────────────────────────────────────────
-
-    /**
-     * Handles enemy death: publishes the death event (triggering gold reward),
-     * increments the level, scales max energy on even levels, prepares shop
-     * contents, and calls back into Main to update visuals and open the shop.
-     *
-     * Safe to call multiple times — exits immediately if the enemy is still alive.
-     */
     void handleEnemyDeath() {
-        if (battleState == BattleState.GAME_OVER) return;
-        if (!game.getPlayer().isAlive()) {
-            checkPlayerDeath();
-            return;
-        }
-        if (game.getEnemy().isAlive()) return; // double-call guard
-
-        setState(BattleState.PLAYER_TURN);
-
-        Enemy dead = game.getEnemy();
-        game.getEventBus().publish(new EnemyDeathEvent(dead));
-        game.advanceLevel();
-        game.setEnemy(EnemyFactory.createEnemy(game.getLevel()));
-
-        // Every 2 levels, max energy grows by 1
-        if (game.getLevel() % 2 == 0) game.increaseMaxEnergy(1);
-
-        // Prepare shop inventory
-        game.setCurrentShopCards(CardFactory.shopCards(game.getLevel(), game.getPlayer()));
-        if (dead.isBoss()) {
-            game.setCurrentBossRelics(
-                RelicFactory.bossRelics(game.getLevel(), game.getOwnedRelics()));
-        } else {
-            game.clearCurrentBossRelics();
-        }
-
-        // Delegate visual/shop update to Main
-        onEnemyDeath.run();
+        engine.resolveCurrentEnemyDeath();
     }
 
-    /**
-     * Triggers the death animation followed by the death screen.
-     * Only executes if the player is actually dead.
-     */
-    private void checkPlayerDeath() {
-        if (game.getPlayer().isAlive() || battleState == BattleState.GAME_OVER) return;
-        setState(BattleState.GAME_OVER);
-        animator.playAnimation("_DIE_", UIConstants.DEATH_FRAME_COUNT, false, onPlayerDeath);
-    }
-
-    // ── New turn ──────────────────────────────────────────────────────────────
-
-    /**
-     * Starts a new player turn:
-     *   - Restores energy to max
-     *   - Applies passive relic effects
-     *   - Draws cards up to hand size
-     *   - Clears the last event log
-     */
     void startNewTurn() {
-        if (!game.getPlayer().isAlive()) {
-            checkPlayerDeath();
-            return;
-        }
-        setState(BattleState.PLAYER_TURN);
-        game.getPlayer().restoreEnergy(game.getMaxEnergy());
-        game.getEventLog().clear();
-
-        for (RelicItem relic : game.getOwnedRelics()) {
-            relic.applyPassive(game.getPlayer(), game);
-        }
-
-        drawMissingHandCardsIfPlayerTurn();
-
-        onUpdateUI.run();
-        onLog.accept("New turn started.");
+        engine.startNewTurn();
     }
 }
