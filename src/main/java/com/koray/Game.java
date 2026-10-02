@@ -67,4 +67,13 @@ public class Game {
         handSizeUpgradeLevel++;
         return true;
     }
+
+    public RunSummary createRunSummary() {
+        return new RunSummary(
+            level,
+            player.getGold(),
+            ownedRelics.stream().map(relic -> relic.name).toList(),
+            player.deck.size() + player.hand.size() + player.discard.size()
+        );
+    }
 }

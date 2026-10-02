@@ -65,11 +65,12 @@ public class Main extends Application {
 
     /** Shows the game-over screen with restart and menu buttons. */
     private void showDeathScreen() {
+        RunSummary summary = game.createRunSummary();
         if (animator != null) animator.stop();
         if (enemyAnimator != null) enemyAnimator.stop();
         Shop.closeShop();
 
-        setScene(DeathScreen.create(
+        setScene(DeathScreen.create(summary,
             () -> {
                 Shop.closeShop();
                 initializeGame();
@@ -203,6 +204,11 @@ public class Main extends Application {
                     && battleController != null
                     && battleController.canPlayerAct()) {
                 battleController.handleEndTurn();
+            } else if (battleController != null && handView != null) {
+                int handIndex = CardHotkeys.handIndexFor(e.getCode());
+                if (handIndex >= 0) {
+                    handView.playCardAt(handIndex, battleController);
+                }
             }
         });
         primaryStage.setScene(scene);

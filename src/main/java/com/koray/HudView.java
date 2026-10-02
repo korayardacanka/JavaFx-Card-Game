@@ -13,6 +13,7 @@ import javafx.scene.layout.VBox;
 public class HudView {
 
     private final Label goldLabel = new Label();
+    private final Label deckCountsLabel = new Label();
     private final Label energyLabel = new Label();
     private final Label hpLabel = new Label();
     private final Label shieldLabel = new Label();
@@ -35,6 +36,7 @@ public class HudView {
         topPanel.setStyle("-fx-background-color: rgba(0,0,0,0.45);");
 
         styleHUDLabel(goldLabel);
+        styleHUDLabel(deckCountsLabel);
         styleHUDLabel(energyLabel);
         styleHUDLabel(hpLabel);
         styleHUDLabel(shieldLabel);
@@ -43,7 +45,7 @@ public class HudView {
         shieldBar.setPrefWidth(UIConstants.PROGRESS_BAR_WIDTH);
         relicsBox.setMaxWidth(UIConstants.HUD_PANEL_WIDTH);
         leftPanel = new VBox(5, hpLabel, hpBar, shieldLabel, shieldBar,
-            energyLabel, goldLabel, relicsBox);
+            energyLabel, goldLabel, deckCountsLabel, relicsBox);
         leftPanel.setPadding(new Insets(14));
         leftPanel.setStyle("-fx-background-color: rgba(0,0,0,0.52); -fx-background-radius: 0 10 10 0;");
 
@@ -72,6 +74,8 @@ public class HudView {
 
     public void update(Game game) {
         goldLabel.setText("Gold: " + game.player.getGold());
+        deckCountsLabel.setText("Deck " + game.player.deck.size()
+            + " | Discard " + game.player.discard.size());
         energyLabel.setText("Energy: " + game.player.getEnergy() + " / " + game.maxEnergy);
         levelLabel.setText("LEVEL " + game.level);
         hpLabel.setText("❤  " + game.player.getHp() + " / " + game.player.getMaxHp());

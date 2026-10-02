@@ -86,5 +86,6 @@ src/
 ## Controls
 
 - Select **Play** on a card to use it.
+- Press **1–7** to play the corresponding card in your hand.
 - Select **End Turn** or press **E** to end your turn.
 - Select **Reroll Hand (10 Gold)** to discard your hand and draw the same number of cards.

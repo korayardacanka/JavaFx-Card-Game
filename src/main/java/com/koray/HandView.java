@@ -6,6 +6,8 @@ import javafx.scene.control.Label;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.function.Supplier;
 
 /** Owns the card hand, card rendering, and turn controls. */
@@ -14,6 +16,7 @@ public class HandView {
     private final Game game;
     private final Supplier<BattleController> controllerSupplier;
     private final HBox cardsBox = new HBox(UIConstants.HAND_BOX_SPACING);
+    private final List<VBox> cardBoxes = new ArrayList<>();
     private final Label log = new Label();
     private final Button endTurnButton = new Button("End Turn (E)");
     private final Button rerollButton = new Button("Reroll Hand (10 Gold)");
@@ -53,8 +56,11 @@ public class HandView {
 
     public void update(BattleController controller) {
         cardsBox.getChildren().clear();
+        cardBoxes.clear();
         for (Card card : game.player.hand) {
-            cardsBox.getChildren().add(createCard(card, controller));
+            VBox cardBox = createCard(card, controller);
+            cardBoxes.add(cardBox);
+            cardsBox.getChildren().add(cardBox);
         }
         endTurnButton.setDisable(controller == null || !controller.canPlayerAct());
         rerollButton.setDisable(controller == null || !controller.canPlayerAct()
@@ -64,6 +70,18 @@ public class HandView {
 
     public void setLog(String message) {
         log.setText(message);
+    }
+
+    public void playCardAt(int index, BattleController controller) {
+        if (controller == null || !controller.canPlayerAct()
+                || index < 0 || index >= game.player.hand.size()
+                || index >= cardBoxes.size()) {
+            return;
+        }
+
+        Card card = game.player.hand.get(index);
+        if (game.player.getEnergy() < card.cost) return;
+        playCard(card, cardBoxes.get(index), controller);
     }
 
     private VBox createCard(Card card, BattleController controller) {
@@ -98,12 +116,15 @@ public class HandView {
         Button play = new Button("Play");
         play.setDisable(controller == null || controller.isTurnLocked()
             || game.player.getEnergy() < card.cost);
-        play.setOnAction(event -> {
-            if (controller != null && !controller.isTurnLocked()) {
-                controller.handleCardPlay(card, box);
-            }
-        });
+        play.setOnAction(event -> playCard(card, box, controller));
         box.getChildren().addAll(name, effectDescription, cost, play);
         return box;
+    }
+
+    private void playCard(Card card, VBox box, BattleController controller) {
+        if (controller != null && controller.canPlayerAct()
+                && game.player.getEnergy() >= card.cost) {
+            controller.handleCardPlay(card, box);
+        }
     }
 }
