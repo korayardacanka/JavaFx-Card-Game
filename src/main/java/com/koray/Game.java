@@ -9,7 +9,8 @@ import java.util.*;
  * and the EventBus used to decouple subsystems.
  *
  * This class intentionally contains no logic — it is a plain data object.
- * All game rules live in Main (turn handling) and the relevant domain classes.
+ * Combat flow and turn rules live in BattleController; other rules are
+ * implemented by the relevant domain classes.
  */
 public class Game {
 

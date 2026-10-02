@@ -53,7 +53,7 @@ public class BattleController {
      * @param game          the active game state
      * @param deckManager   deck operations (draw, reset)
      * @param animator      sprite and card animations
-    * @param enemyAnimator shape-based enemy animations
+     * @param enemyAnimator shape-based enemy animations
      * @param onUpdateUI    callback: refresh all UI labels and bars
      * @param onPlayerDeath callback: show the death screen
      * @param onEnemyDeath  callback: update enemy visuals and open shop
