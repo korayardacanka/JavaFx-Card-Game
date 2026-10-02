@@ -239,7 +239,7 @@ public class Main extends Application {
         updateBackground();
         updateEnemyVisuals();
         updateUI();
-        Shop.open(game, primaryStage);
+        Shop.open(game, primaryStage, this::updateUI);
     }
 
     // ── Background ────────────────────────────────────────────────────────────

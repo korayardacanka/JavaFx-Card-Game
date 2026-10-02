@@ -17,6 +17,8 @@ Gameplay backgrounds and combat visuals change as you progress through the enemy
 - A tiered card pool and a shop between battles.
 - Relics that grant passive, defensive, and damage-triggered bonuses.
 - Reroll your current hand for 10 gold.
+- Permanently increase your hand size in the shop: three upgrades add one card
+  each and cost 100, 200, and 300 gold (maximum hand size: 7).
 - Four enemy families, each with four phases followed by a boss phase.
 - Animated player sprites, custom enemy portraits, and biome backgrounds.
 

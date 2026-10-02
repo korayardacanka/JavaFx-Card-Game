@@ -47,12 +47,12 @@ public class DeckManager {
     }
 
     /**
-     * Draws a full hand of INITIAL_HAND_SIZE cards.
+     * Draws a full hand up to the current hand-size limit.
      * Clears any existing hand before drawing.
      */
     public void drawHand() {
         game.player.hand.clear();
-        for (int i = 0; i < UIConstants.INITIAL_HAND_SIZE; i++) {
+        for (int i = 0; i < game.getHandSizeLimit(); i++) {
             drawSingleCard();
         }
     }

@@ -12,7 +12,7 @@ public class Shop {
 
     private static Stage currentStage;
 
-    public static void open(Game game, Stage owner) {
+    public static void open(Game game, Stage owner, Runnable onGameStateChanged) {
 
         // Close the previous shop if it is still open.
         if (currentStage != null && currentStage.isShowing()) {
@@ -32,6 +32,27 @@ public class Shop {
         content.getChildren().add(goldLabel);
 
         Label info = new Label();
+        List<Button> shopCardButtons = new ArrayList<>();
+        List<Card> availableShopCards = new ArrayList<>();
+        Set<Button> purchasedCardButtons = new HashSet<>();
+
+        Button handUpgradeButton = new Button();
+        updateHandUpgradeButton(handUpgradeButton, game);
+        handUpgradeButton.setMaxWidth(Double.MAX_VALUE);
+        handUpgradeButton.setOnAction(e -> {
+            if (game.purchaseHandSizeUpgrade()) {
+                info.setText("Hand size increased to " + game.getHandSizeLimit() + " cards.");
+                goldLabel.setText("Gold: " + game.player.getGold());
+                onGameStateChanged.run();
+            } else {
+                info.setText("❌ Not enough gold!");
+            }
+            updateHandUpgradeButton(handUpgradeButton, game);
+            updateShopCardButtons(game, availableShopCards, shopCardButtons, purchasedCardButtons);
+        });
+        Label upgradeTitle = new Label("── Permanent Upgrade ──");
+        upgradeTitle.setStyle("-fx-font-weight:bold;");
+        content.getChildren().addAll(upgradeTitle, handUpgradeButton);
 
         // ── CARDS ────────────────────────────────────
         List<Card> shopCards = game.currentShopCards.isEmpty()
@@ -49,18 +70,25 @@ public class Shop {
                     "  |  Price: " + card.price + " gold"
                 );
                 btn.setMaxWidth(Double.MAX_VALUE);
+                availableShopCards.add(card);
+                shopCardButtons.add(btn);
                 btn.setOnAction(e -> {
                     if (game.player.spendGold(card.price)) {
                         game.player.deck.add(card);
                         info.setText("✅ Purchased: " + card.name);
                         goldLabel.setText("Gold: " + game.player.getGold());
-                        btn.setDisable(true);
+                        onGameStateChanged.run();
+                        purchasedCardButtons.add(btn);
+                        updateHandUpgradeButton(handUpgradeButton, game);
+                        updateShopCardButtons(game, availableShopCards, shopCardButtons,
+                            purchasedCardButtons);
                     } else {
                         info.setText("❌ Not enough gold!");
                     }
                 });
                 content.getChildren().add(btn);
             }
+            updateShopCardButtons(game, availableShopCards, shopCardButtons, purchasedCardButtons);
         }
 
         // ── BOSS RELICS (only after defeating a boss) ─
@@ -102,6 +130,9 @@ public class Shop {
                         info.setText("✨ Purchased: " + relic.name);
                         goldLabel.setText("Gold: " + game.player.getGold());
                         btn.setDisable(true);
+                        updateHandUpgradeButton(handUpgradeButton, game);
+                        updateShopCardButtons(game, availableShopCards, shopCardButtons,
+                            purchasedCardButtons);
                     } else {
                         info.setText("❌ Not enough gold!");
                     }
@@ -168,6 +199,32 @@ public class Shop {
                 && !bloodPactLocked
                 && game.player.getGold() >= relic.price;
         });
+    }
+
+    private static void updateHandUpgradeButton(Button button, Game game) {
+        int cost = game.getNextHandSizeUpgradeCost();
+        if (cost < 0) {
+            button.setText("Hand Size: MAX (" + game.getHandSizeLimit() + " cards)");
+            button.setDisable(true);
+            return;
+        }
+        button.setText("Hand Size Lv. " + (game.getHandSizeUpgradeLevel() + 1)
+            + " (+1 card) | " + cost + " gold");
+        button.setDisable(!canPurchaseHandSizeUpgrade(game));
+    }
+
+    static boolean canPurchaseHandSizeUpgrade(Game game) {
+        int cost = game.getNextHandSizeUpgradeCost();
+        return cost >= 0 && game.player.getGold() >= cost;
+    }
+
+    private static void updateShopCardButtons(Game game, List<Card> cards, List<Button> buttons,
+                                               Set<Button> purchasedButtons) {
+        for (int i = 0; i < cards.size(); i++) {
+            Button button = buttons.get(i);
+            button.setDisable(purchasedButtons.contains(button)
+                || game.player.getGold() < cards.get(i).price);
+        }
     }
 
     public static void closeShop() {

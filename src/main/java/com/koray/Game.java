@@ -32,6 +32,9 @@ public class Game {
     /** Maximum energy the player restores at the start of each turn. */
     int maxEnergy = 3;
 
+    /** Number of permanent hand-size upgrades purchased (maximum 3). */
+    private int handSizeUpgradeLevel;
+
     /** Cards currently available for purchase in the shop. */
     List<Card>      currentShopCards  = new ArrayList<>();
 
@@ -40,4 +43,28 @@ public class Game {
 
     /** All relics the player has purchased and owns. */
     List<RelicItem> ownedRelics       = new ArrayList<>();
+
+    public int getHandSizeLimit() {
+        return UIConstants.INITIAL_HAND_SIZE + handSizeUpgradeLevel;
+    }
+
+    public int getHandSizeUpgradeLevel() {
+        return handSizeUpgradeLevel;
+    }
+
+    public int getNextHandSizeUpgradeCost() {
+        if (handSizeUpgradeLevel >= 3) {
+            return -1;
+        }
+        return (handSizeUpgradeLevel + 1) * 100;
+    }
+
+    public boolean purchaseHandSizeUpgrade() {
+        int cost = getNextHandSizeUpgradeCost();
+        if (cost < 0 || !player.spendGold(cost)) {
+            return false;
+        }
+        handSizeUpgradeLevel++;
+        return true;
+    }
 }

@@ -340,7 +340,7 @@ public class BattleController {
             relic.applyPassive(game.player, game);
         }
 
-        int cardsToDraw = UIConstants.INITIAL_HAND_SIZE - game.player.hand.size();
+        int cardsToDraw = game.getHandSizeLimit() - game.player.hand.size();
         for (int i = 0; i < cardsToDraw; i++) {
             deckManager.drawSingleCard();
         }

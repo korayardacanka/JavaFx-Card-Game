@@ -121,7 +121,7 @@ public final class HeadlessSimulator {
                 turnsAtLevel = 0;
             }
 
-            int cardsToDraw = UIConstants.INITIAL_HAND_SIZE - game.player.hand.size();
+            int cardsToDraw = game.getHandSizeLimit() - game.player.hand.size();
             for (int i = 0; i < cardsToDraw; i++) {
                 deckManager.drawSingleCard();
             }
@@ -135,7 +135,7 @@ public final class HeadlessSimulator {
         for (RelicItem relic : game.ownedRelics) {
             relic.applyPassive(game.player, game);
         }
-        int cardsToDraw = UIConstants.INITIAL_HAND_SIZE - game.player.hand.size();
+        int cardsToDraw = game.getHandSizeLimit() - game.player.hand.size();
         for (int i = 0; i < cardsToDraw; i++) {
             deckManager.drawSingleCard();
         }
@@ -215,6 +215,11 @@ public final class HeadlessSimulator {
     }
 
     private static void applyShopPolicy(Game game) {
+        int upgradeCost = game.getNextHandSizeUpgradeCost();
+        if (upgradeCost >= 0 && game.player.getGold() >= upgradeCost) {
+            game.purchaseHandSizeUpgrade();
+        }
+
         Card bestCard = null;
         int bestCardScore = Integer.MIN_VALUE;
         for (Card card : game.currentShopCards) {
