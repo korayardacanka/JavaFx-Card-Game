@@ -18,6 +18,11 @@ public class BurnEffect implements CardEffect {
         this.stacks = stacks;
     }
 
+    @Override
+    public String describe() {
+        return "Apply " + stacks + " burn";
+    }
+
     /**
      * Adds burn stacks to the target enemy.
      * Multiple uses stack — the enemy keeps accumulating burn.

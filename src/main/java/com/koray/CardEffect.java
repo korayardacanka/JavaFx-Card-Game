@@ -9,6 +9,11 @@ package com.koray;
  */
 public interface CardEffect {
     /**
+     * Returns a short description of this effect for display on the card.
+     */
+    String describe();
+
+    /**
      * Applies this effect to the given targets.
      *
      * @param player the active player (used for heals, shields, etc.)

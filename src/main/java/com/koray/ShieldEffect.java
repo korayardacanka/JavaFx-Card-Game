@@ -17,6 +17,11 @@ public class ShieldEffect implements CardEffect {
         this.shield = shield;
     }
 
+    @Override
+    public String describe() {
+        return "Gain " + shield + " shield";
+    }
+
     /**
      * Adds shield to the player (enemy is unaffected).
      */

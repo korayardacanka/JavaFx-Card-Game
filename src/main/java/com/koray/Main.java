@@ -57,7 +57,7 @@ public class Main extends Application {
     private Label hpLabel      = new Label();
     private Label shieldLabel  = new Label();
     private Label statusLabel  = new Label();
-    private Label relicsLabel  = new Label();  // shows owned relic icons in the HUD
+    private FlowPane relicsBox = new FlowPane(5, 3);
 
     private ProgressBar hpBar      = new ProgressBar();
     private ProgressBar shieldBar  = new ProgressBar();
@@ -206,12 +206,9 @@ public class Main extends Application {
         shieldBar = new ProgressBar(0.0);
         shieldBar.setStyle("-fx-accent: #3388cc;"); shieldBar.setPrefWidth(160);
 
-        relicsLabel = new Label();
-        relicsLabel.setStyle("-fx-text-fill: #ffe866; -fx-font-size:16px;");
-        relicsLabel.setWrapText(true);
-        relicsLabel.setMaxWidth(170);
+        relicsBox.setMaxWidth(170);
 
-        VBox leftPanel = new VBox(5, hpLabel, hpBar, shieldLabel, shieldBar, energyLabel, goldLabel, relicsLabel);
+        VBox leftPanel = new VBox(5, hpLabel, hpBar, shieldLabel, shieldBar, energyLabel, goldLabel, relicsBox);
         leftPanel.setPadding(new Insets(14));
         leftPanel.setStyle("-fx-background-color: rgba(0,0,0,0.52); -fx-background-radius: 0 10 10 0;");
 
@@ -342,17 +339,14 @@ public class Main extends Application {
             endTurnButton.setDisable(!battleController.canPlayerAct());
         }
 
-        // Show owned relic icons in the left HUD panel
-        if (game.ownedRelics.isEmpty()) {
-            relicsLabel.setText("");
-        } else {
-            StringBuilder relicIcons = new StringBuilder();
-            for (RelicItem r : game.ownedRelics) {
-                // Extract the leading emoji from the relic name (first "word")
-                String[] parts = r.name.split(" ", 2);
-                relicIcons.append(parts[0]).append(" ");
-            }
-            relicsLabel.setText(relicIcons.toString().trim());
+        // Show owned relic icons with a tooltip for each relic.
+        relicsBox.getChildren().clear();
+        for (RelicItem relic : game.ownedRelics) {
+            String[] nameParts = relic.name.split(" ", 2);
+            Label icon = new Label(nameParts[0]);
+            icon.setStyle("-fx-text-fill: #ffe866; -fx-font-size:16px;");
+            Tooltip.install(icon, new Tooltip(relic.name + "\n" + relic.description));
+            relicsBox.getChildren().add(icon);
         }
 
         updateHandUI();
@@ -395,14 +389,18 @@ public class Main extends Application {
 
         Label name = new Label(emoji + c.name);
         name.setStyle("-fx-font-weight:bold; -fx-font-size:13px;");
+        Label effectDescription = new Label(c.effect.describe());
+        effectDescription.setWrapText(true);
+        effectDescription.setMaxWidth(UIConstants.CARD_SIZE_WIDTH - 20);
+        effectDescription.setStyle("-fx-font-size:11px;");
         Label cost = new Label("Cost: " + c.cost);
         Button play = new Button("Play");
-        play.setDisable(battleController.isTurnLocked());
+        play.setDisable(battleController.isTurnLocked() || game.player.getEnergy() < c.cost);
         play.setOnAction(e -> {
             if (battleController.isTurnLocked()) return;
             battleController.handleCardPlay(c, box);
         });
-        box.getChildren().addAll(name, cost, play);
+        box.getChildren().addAll(name, effectDescription, cost, play);
         return box;
     }
 

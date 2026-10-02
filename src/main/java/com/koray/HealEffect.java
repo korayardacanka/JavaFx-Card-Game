@@ -17,6 +17,11 @@ public class HealEffect implements CardEffect {
         this.heal = heal;
     }
 
+    @Override
+    public String describe() {
+        return "Heal " + heal + " HP";
+    }
+
     /**
      * Restores HP to the player (enemy is unaffected).
      */

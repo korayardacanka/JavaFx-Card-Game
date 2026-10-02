@@ -18,6 +18,11 @@ public class PoisonEffect implements CardEffect {
         this.stacks = stacks;
     }
 
+    @Override
+    public String describe() {
+        return "Apply " + stacks + " poison";
+    }
+
     /**
      * Adds poison stacks to the target enemy.
      * Stackable — multiple uses increase the per-turn damage.

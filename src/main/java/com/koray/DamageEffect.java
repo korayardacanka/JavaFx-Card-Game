@@ -17,6 +17,11 @@ public class DamageEffect implements CardEffect {
         this.damage = damage;
     }
 
+    @Override
+    public String describe() {
+        return "Deal " + damage + " damage";
+    }
+
     /**
      * Deals damage directly to the enemy's HP (ignoring player).
      */

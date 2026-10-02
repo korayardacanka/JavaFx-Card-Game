@@ -3,6 +3,7 @@ package com.koray;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
+import javafx.geometry.Pos;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 import java.util.*;
@@ -23,12 +24,12 @@ public class Shop {
         stage.initModality(Modality.WINDOW_MODAL);
         currentStage = stage;
 
-        VBox root = new VBox(12);
-        root.setStyle("-fx-padding:20;");
+        VBox content = new VBox(12);
+        content.setStyle("-fx-padding:20;");
 
         Label goldLabel = new Label("Gold: " + game.player.getGold());
         goldLabel.setStyle("-fx-font-size:16px; -fx-font-weight:bold;");
-        root.getChildren().add(goldLabel);
+        content.getChildren().add(goldLabel);
 
         Label info = new Label();
 
@@ -40,13 +41,14 @@ public class Shop {
         if (!shopCards.isEmpty()) {
             Label cardTitle = new Label("── Kartlar ──");
             cardTitle.setStyle("-fx-font-weight:bold;");
-            root.getChildren().add(cardTitle);
+            content.getChildren().add(cardTitle);
 
             for (Card card : shopCards) {
                 Button btn = new Button(
                     card.name + "  |  Maliyet: " + card.cost +
                     "  |  Fiyat: " + card.price + " gold"
                 );
+                btn.setMaxWidth(Double.MAX_VALUE);
                 btn.setOnAction(e -> {
                     if (game.player.spendGold(card.price)) {
                         game.player.deck.add(card);
@@ -57,7 +59,7 @@ public class Shop {
                         info.setText("❌ Yeterli gold yok!");
                     }
                 });
-                root.getChildren().add(btn);
+                content.getChildren().add(btn);
             }
         }
 
@@ -65,7 +67,7 @@ public class Shop {
         if (!game.currentBossRelics.isEmpty()) {
             Label sep = new Label("── Boss Ödülleri ──");
             sep.setStyle("-fx-font-weight:bold; -fx-text-fill:#cc7700;");
-            root.getChildren().add(sep);
+            content.getChildren().add(sep);
 
             for (RelicItem relic : game.currentBossRelics) {
                 boolean alreadyOwned = game.ownedRelics.stream()
@@ -77,6 +79,7 @@ public class Shop {
                     relic.name + "  |  " + relic.description +
                     "  |  " + relic.price + " gold"
                 );
+                btn.setMaxWidth(Double.MAX_VALUE);
                 btn.setStyle("-fx-background-color:#fff3cd;");
                 if (alreadyOwned) {
                     btn.setText(btn.getText() + "  [Sahipsin]");
@@ -103,23 +106,35 @@ public class Shop {
                         info.setText("❌ Yeterli gold yok!");
                     }
                 });
-                root.getChildren().add(btn);
+                content.getChildren().add(btn);
             }
 
         }
 
+        ScrollPane scrollPane = new ScrollPane(content);
+        scrollPane.setFitToWidth(true);
+        scrollPane.setPannable(true);
+
         Button closeBtn = new Button("Kapat");
         closeBtn.setOnAction(e -> requestCloseWithConfirmation(stage, game));
-        root.getChildren().addAll(info, closeBtn);
+        HBox closeRow = new HBox(closeBtn);
+        closeRow.setAlignment(Pos.CENTER_RIGHT);
+        VBox footer = new VBox(8, info, closeRow);
+        footer.setStyle("-fx-padding:10 16 16 16;");
+        BorderPane root = new BorderPane(scrollPane);
+        root.setBottom(footer);
 
         stage.setOnCloseRequest(e -> {
             e.consume();
             requestCloseWithConfirmation(stage, game);
         });
 
-        stage.setScene(new Scene(root, 420, 380));
+        stage.setScene(new Scene(root, 620, 620));
+        stage.setMinWidth(460);
+        stage.setMinHeight(360);
         stage.setTitle("SHOP - Level " + game.level);
         stage.show();
+        stage.centerOnScreen();
     }
 
     private static void requestCloseWithConfirmation(Stage stage, Game game) {
