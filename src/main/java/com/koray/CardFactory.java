@@ -16,7 +16,7 @@ public class CardFactory {
     // ── Tier helpers ──────────────────────────────────────────────────────────
 
     /** Returns the tier index (0-based) for the given game level. */
-    public static int tierForLevel(int level) { return (level - 1) / 5; }
+    public static int tierForLevel(int level) { return GameRules.tierForLevel(level); }
 
     /** Returns a "+" suffix string matching the tier (tier 0 → "", tier 2 → "++"). */
     public static String tierSuffix(int tier)  { return "+".repeat(tier); }
@@ -73,14 +73,28 @@ public class CardFactory {
      * Used as the source for both shop generation and random picks.
      */
     public static List<Card> allCardsForLevel(int level) {
-        List<Card> all = new ArrayList<>();
-        all.add(makeScaled("Damage", 1, 10, 15, level, (v,t) -> new DamageEffect(v)));
-        all.add(makeScaled("Shield", 1, 10, 10, level, (v,t) -> new ShieldEffect(v)));
-        all.add(makeScaled("Heal",   2, 20, 10, level, (v,t) -> new HealEffect(v)));
+        List<Card> all = new ArrayList<>(starterCardsForLevel(level));
         all.add(makeScaled("Poison", 1, 15,  3, level, (v,t) -> new PoisonEffect(v)));
         all.add(makeScaled("Burn",   2, 20,  8, level, (v,t) -> new BurnEffect(v)));
         all.add(make("Freeze", 2, 25, level, new FreezeEffect(1)));
         return all;
+    }
+
+    /** Creates a fresh, unscaled starter deck with the original card composition. */
+    public static List<Card> starterDeck() {
+        List<Card> deck = new ArrayList<>();
+        for (int i = 0; i < UIConstants.INITIAL_DECK_COPIES; i++) {
+            deck.addAll(starterCardsForLevel(1));
+        }
+        return deck;
+    }
+
+    private static List<Card> starterCardsForLevel(int level) {
+        return List.of(
+            makeScaled("Damage", 1, 10, 15, level, (v,t) -> new DamageEffect(v)),
+            makeScaled("Shield", 1, 10, 10, level, (v,t) -> new ShieldEffect(v)),
+            makeScaled("Heal",   2, 20, 10, level, (v,t) -> new HealEffect(v))
+        );
     }
 
     /**
@@ -111,7 +125,7 @@ public class CardFactory {
 
         // Also include cards from the previous tier for variety
         if (level > 1) {
-            int prevLevel = Math.max(1, level - 5);
+            int prevLevel = Math.max(1, level - GameRules.LEVELS_PER_TIER);
             for (Card c : allCardsForLevel(prevLevel)) {
                 if (!owned.contains(c.name)) poolMap.putIfAbsent(c.name, c);
             }

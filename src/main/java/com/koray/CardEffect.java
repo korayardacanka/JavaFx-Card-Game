@@ -13,6 +13,15 @@ public interface CardEffect {
      */
     String describe();
 
+    /** Returns the icon prefix used to identify this effect on a card. */
+    default String icon() { return ""; }
+
+    /** Returns the background color used for cards with this effect. */
+    default String color() { return ""; }
+
+    /** Returns whether this effect directly damages the enemy. */
+    default boolean isDirectDamage() { return false; }
+
     /**
      * Applies this effect to the given targets.
      *

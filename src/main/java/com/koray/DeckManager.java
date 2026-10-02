@@ -29,20 +29,14 @@ public class DeckManager {
 
     /**
      * Clears all card piles and rebuilds the starting deck from scratch.
-     * Each starter card (Damage, Shield, Heal) is added INITIAL_DECK_COPIES times,
-     * then the deck is shuffled.
+     * Each starter card is added INITIAL_DECK_COPIES times, then shuffled.
      */
     public void resetPlayerDeck() {
         game.player.deck.clear();
         game.player.hand.clear();
         game.player.discard.clear();
 
-        for (int i = 0; i < UIConstants.INITIAL_DECK_COPIES; i++) {
-            game.player.deck.add(CardFactory.make("Damage", 1, 10, 1, new DamageEffect(15)));
-            game.player.deck.add(CardFactory.make("Shield", 1, 10, 1, new ShieldEffect(10)));
-            game.player.deck.add(CardFactory.make("Heal",   2, 20, 1, new HealEffect(10)));
-        }
-
+        game.player.deck.addAll(CardFactory.starterDeck());
         Collections.shuffle(game.player.deck, random);
     }
 

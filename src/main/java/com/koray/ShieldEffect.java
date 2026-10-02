@@ -22,6 +22,15 @@ public class ShieldEffect implements CardEffect {
         return "Gain " + shield + " shield";
     }
 
+    @Override
+    public String icon() { return "🛡 "; }
+
+    @Override
+    public String color() { return "#CCE5FF"; }
+
+    @Override
+    public boolean isDirectDamage() { return false; }
+
     /**
      * Adds shield to the player (enemy is unaffected).
      */

@@ -23,6 +23,15 @@ public class PoisonEffect implements CardEffect {
         return "Apply " + stacks + " poison";
     }
 
+    @Override
+    public String icon() { return "☠ "; }
+
+    @Override
+    public String color() { return "#D8FFD8"; }
+
+    @Override
+    public boolean isDirectDamage() { return false; }
+
     /**
      * Adds poison stacks to the target enemy.
      * Stackable — multiple uses increase the per-turn damage.

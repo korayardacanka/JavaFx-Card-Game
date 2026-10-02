@@ -22,6 +22,15 @@ public class DamageEffect implements CardEffect {
         return "Deal " + damage + " damage";
     }
 
+    @Override
+    public String icon() { return "⚔ "; }
+
+    @Override
+    public String color() { return "#FFCCCC"; }
+
+    @Override
+    public boolean isDirectDamage() { return true; }
+
     /**
      * Deals damage directly to the enemy's HP (ignoring player).
      */

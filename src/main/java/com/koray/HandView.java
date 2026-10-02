@@ -98,15 +98,7 @@ public class HandView {
             + "; -fx-border-width:" + borderWidth
             + "; -fx-background-radius:8; -fx-border-radius:8; -fx-padding:10;");
 
-        String emoji = "";
-        if (card.effect instanceof DamageEffect) emoji = "⚔ ";
-        else if (card.effect instanceof HealEffect) emoji = "💚 ";
-        else if (card.effect instanceof ShieldEffect) emoji = "🛡 ";
-        else if (card.effect instanceof PoisonEffect) emoji = "☠ ";
-        else if (card.effect instanceof BurnEffect) emoji = "🔥 ";
-        else if (card.effect instanceof FreezeEffect) emoji = "❄ ";
-
-        Label name = new Label(emoji + card.name);
+        Label name = new Label(card.effect.icon() + card.name);
         name.setStyle("-fx-font-weight:bold; -fx-font-size:13px;");
         Label effectDescription = new Label(card.effect.describe());
         effectDescription.setWrapText(true);

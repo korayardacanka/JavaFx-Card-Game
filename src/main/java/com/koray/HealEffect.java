@@ -22,6 +22,15 @@ public class HealEffect implements CardEffect {
         return "Heal " + heal + " HP";
     }
 
+    @Override
+    public String icon() { return "💚 "; }
+
+    @Override
+    public String color() { return "#CCFFCC"; }
+
+    @Override
+    public boolean isDirectDamage() { return false; }
+
     /**
      * Restores HP to the player (enemy is unaffected).
      */

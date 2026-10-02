@@ -125,7 +125,7 @@ public class BattleController {
         }
 
         // Play attack animation for damage cards, idle for others
-        if (c.effect instanceof DamageEffect) {
+        if (c.effect.isDirectDamage()) {
             animator.playAnimation("ATTACK_", UIConstants.ATTACK_FRAME_COUNT, false,
                 () -> animator.playAnimation("_IDLE_", UIConstants.IDLE_FRAME_COUNT, true, null));
         } else {

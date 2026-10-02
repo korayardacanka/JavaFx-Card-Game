@@ -31,8 +31,8 @@ public class EnemyFactory {
      */
     public static Enemy createEnemy(int level) {
 
-        int family = Math.min((level - 1) / 5, FAMILIES.length - 1);
-        int phase = (level - 1) % 5;
+        int family = Math.min(GameRules.tierForLevel(level), FAMILIES.length - 1);
+        int phase = (level - 1) % GameRules.LEVELS_PER_TIER;
         boolean isBoss = phase == 4;
         int baseHp = 40 + level * 12 + phase * 8;
         int baseDamage = 8 + level * 2 + phase * 2;

@@ -8,7 +8,7 @@ import java.util.*;
  * Already-owned relics are filtered out so the player is never offered
  * a duplicate — the pool shrinks as the player collects more relics.
  *
- * Tier calculation:  tier = (level - 1) / 5
+ * Tier calculation is shared through GameRules.
  * Higher tiers yield stronger relic variants (more HP, more heal, etc.).
  */
 public class RelicFactory {
@@ -26,7 +26,7 @@ public class RelicFactory {
     }
 
     public static List<RelicItem> bossRelics(int level, List<RelicItem> ownedRelics, Random random) {
-        int tier = (level - 1) / 5;
+        int tier = GameRules.tierForLevel(level);
 
         // Build the names of already-owned relics for fast lookup
         Set<String> ownedNames = new HashSet<>();

@@ -22,6 +22,15 @@ public class FreezeEffect implements CardEffect {
         return "Freeze for " + turns + (turns == 1 ? " turn" : " turns");
     }
 
+    @Override
+    public String icon() { return "❄ "; }
+
+    @Override
+    public String color() { return "#E0F4FF"; }
+
+    @Override
+    public boolean isDirectDamage() { return false; }
+
     /**
      * Adds freeze turns to the target enemy.
      * Stackable: if the enemy is already frozen this extends the existing freeze.

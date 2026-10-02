@@ -23,6 +23,15 @@ public class BurnEffect implements CardEffect {
         return "Apply " + stacks + " burn";
     }
 
+    @Override
+    public String icon() { return "🔥 "; }
+
+    @Override
+    public String color() { return "#FFE0B2"; }
+
+    @Override
+    public boolean isDirectDamage() { return false; }
+
     /**
      * Adds burn stacks to the target enemy.
      * Multiple uses stack — the enemy keeps accumulating burn.

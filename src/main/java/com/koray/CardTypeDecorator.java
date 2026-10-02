@@ -30,13 +30,8 @@ public class CardTypeDecorator extends DesignDecorator {
      */
     @Override
     public String getBackground() {
-        if (effect instanceof DamageEffect) return "#FFCCCC"; // red   — damage
-        if (effect instanceof HealEffect)   return "#CCFFCC"; // green — heal
-        if (effect instanceof ShieldEffect) return "#CCE5FF"; // blue  — shield
-        if (effect instanceof PoisonEffect) return "#D8FFD8"; // dark green — poison
-        if (effect instanceof BurnEffect)   return "#FFE0B2"; // orange — burn
-        if (effect instanceof FreezeEffect) return "#E0F4FF"; // ice blue — freeze
-        return wrapped.getBackground();
+        String color = effect.color();
+        return color.isEmpty() ? wrapped.getBackground() : color;
     }
 
     /** Delegates border color to the wrapped design unchanged. */

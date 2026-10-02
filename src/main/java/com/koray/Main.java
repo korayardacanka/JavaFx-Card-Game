@@ -253,7 +253,7 @@ public class Main extends Application {
 
     /** Loads the correct biome background, cross-fading when it changes. */
     private void updateBackground() {
-        int biome = ((game.level - 1) / 5) % 4 + 1;
+        int biome = GameRules.tierForLevel(game.level) % 4 + 1;
         if (biome == currentBiome && background.getImage() != null) return;
         currentBiome = biome;
 
