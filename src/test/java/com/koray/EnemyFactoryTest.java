@@ -52,20 +52,20 @@ public class EnemyFactoryTest {
         relic.applyOnBuy(game.player, game);
         assertEquals(50, game.player.getHp());
         assertEquals(5, game.maxEnergy);
-        assertTrue(game.lastEvent.contains("+2 Max Energy"));
+        assertTrue(game.eventLog.toDisplayString().contains("+2 Max Energy"));
 
         game.player.takeDamage(20);
         relic.applyOnBuy(game.player, game);
         assertEquals(30, game.player.getHp());
         assertEquals(5, game.maxEnergy);
-        assertTrue(game.lastEvent.contains("combined HP and Shield"));
+        assertTrue(game.eventLog.toDisplayString().contains("combined HP and Shield"));
 
         game.player.heal(5);
         assertEquals(35, game.player.getHp());
         relic.applyOnBuy(game.player, game);
         assertEquals(5, game.player.getHp());
         assertEquals(7, game.maxEnergy);
-        assertTrue(game.lastEvent.contains("+2 Max Energy"));
+        assertTrue(game.eventLog.toDisplayString().contains("+2 Max Energy"));
     }
 
 }

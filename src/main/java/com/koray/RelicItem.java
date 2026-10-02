@@ -61,11 +61,14 @@ public abstract class RelicItem {
      */
     public void onDamageTaken(Player player, Enemy enemy, Game game, int damage) {}
 
+    /** Adds a bonus to the current outgoing damage before it is applied. */
+    public void addDamageBonus(Player player, Enemy enemy, Game game,
+                               DamageContext context) {}
+
     /**
-     * Called whenever the player deals damage to the enemy.
-     * Use for effects that scale with outgoing damage (VampireRelic, ExecutionerRelic).
-     *
-     * @param damage the damage amount just dealt to the enemy
+     * Called after all outgoing damage bonuses have been applied.
+     * Use for effects that react to the final damage, such as lifesteal.
      */
-    public void onEnemyDamaged(Player player, Enemy enemy, Game game, int damage) {}
+    public void onEnemyDamaged(Player player, Enemy enemy, Game game,
+                               DamageContext context) {}
 }

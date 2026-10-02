@@ -223,8 +223,8 @@ public class Main extends Application {
      */
     public void updateUI() {
         hudView.update(game);
-        if (!game.lastEvent.isEmpty()) {
-            handView.setLog(game.lastEvent);
+        if (!game.eventLog.isEmpty()) {
+            handView.setLog(game.eventLog.toDisplayString());
         }
         handView.update(battleController);
     }

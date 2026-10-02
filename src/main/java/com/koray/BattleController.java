@@ -115,13 +115,11 @@ public class BattleController {
         game.player.hand.remove(c);
         game.player.discard.add(c);
 
-        // Fire onEnemyDamaged hooks for all owned relics
+        // Resolve bonuses before firing any relics that react to final damage.
         int dealtDamage = enemyHpBefore - game.enemy.getHp();
         if (dealtDamage > 0) {
             enemyAnimator.playHurt(null);
-            for (RelicItem r : game.ownedRelics) {
-                r.onEnemyDamaged(game.player, game.enemy, game, dealtDamage);
-            }
+            DamagePipeline.resolve(game, dealtDamage);
         }
 
         // Play attack animation for damage cards, idle for others
@@ -204,7 +202,7 @@ public class BattleController {
         int enemyHpBeforeStatus = game.enemy.getHp();
         String statusLog = game.enemy.processStatusEffects();
         if (!statusLog.isEmpty()) {
-            game.lastEvent = statusLog;
+            game.eventLog.set(statusLog);
         }
 
         // 2. Did enemy die from status effects?
@@ -348,7 +346,7 @@ public class BattleController {
         }
         setState(BattleState.PLAYER_TURN);
         game.player.restoreEnergy(game.maxEnergy);
-        game.lastEvent = "";
+        game.eventLog.clear();
 
         for (RelicItem relic : game.ownedRelics) {
             relic.applyPassive(game.player, game);

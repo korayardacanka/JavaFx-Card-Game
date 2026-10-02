@@ -23,8 +23,8 @@ public class Game {
     /** Current game level (increments each time an enemy is defeated). */
     int    level     = 1;
 
-    /** Short message describing the last notable game event, shown in the UI log. */
-    String lastEvent = "";
+    /** Event messages shown in the UI log. */
+    final EventLog eventLog = new EventLog();
 
     /** Event bus for decoupled communication between game subsystems. */
     public EventBus eventBus;

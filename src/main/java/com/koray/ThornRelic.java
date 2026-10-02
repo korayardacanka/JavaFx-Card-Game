@@ -33,7 +33,7 @@ class ThornRelic extends RelicItem {
     public void onDamageTaken(Player player, Enemy enemy, Game game, int damage) {
         if (damage > 0) {
             enemy.takeDamage(thornDamage);
-            game.lastEvent += "  🌵 +" + thornDamage + " reflected";
+            game.eventLog.append("🌵 +" + thornDamage + " reflected");
         }
     }
 }

@@ -30,11 +30,12 @@ class VampireRelic extends RelicItem {
      * @param damage the damage amount just dealt (must be > 0 to trigger)
      */
     @Override
-    public void onEnemyDamaged(Player player, Enemy enemy, Game game, int damage) {
-        int heal = (int)(damage * ratio);
+    public void onEnemyDamaged(Player player, Enemy enemy, Game game,
+                               DamageContext context) {
+        int heal = (int)(context.totalDamage() * ratio);
         if (heal > 0) {
             player.heal(heal);
-            game.lastEvent += "  🧛 +" + heal + " HP";
+            game.eventLog.append("🧛 +" + heal + " HP");
         }
     }
 }

@@ -14,23 +14,16 @@ class ExecutionerRelic extends RelicItem {
               70);
     }
 
-    /**
-     * Called every time the player deals damage to the enemy.
-     * If the enemy's remaining HP ratio is below 30%, applies
-     * an additional 50% of the dealt damage as a bonus hit.
-     *
-     * @param player the active player
-     * @param enemy  the target enemy
-     * @param game   the active game state (used for event logging)
-     * @param damage the damage amount just dealt
-     */
     @Override
-    public void onEnemyDamaged(Player player, Enemy enemy, Game game, int damage) {
+    public void addDamageBonus(Player player, Enemy enemy, Game game,
+                               DamageContext context) {
         double hpRatio = (double) enemy.getHp() / enemy.getMaxHp();
-        if (hpRatio < 0.30 && damage > 0) {
-            int bonus = (int)(damage * 0.5);
-            enemy.takeDamage(bonus);
-            game.lastEvent += "  🪓 +" + bonus + " execute";
+        if (hpRatio < 0.30 && context.baseDamage() > 0) {
+            int bonus = (int)(context.baseDamage() * 0.5);
+            if (bonus > 0) {
+                context.addBonus(bonus);
+                game.eventLog.append("🪓 +" + bonus + " execute");
+            }
         }
     }
 }

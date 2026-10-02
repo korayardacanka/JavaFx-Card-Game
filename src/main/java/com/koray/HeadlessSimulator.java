@@ -192,9 +192,7 @@ public final class HeadlessSimulator {
 
         int dealtDamage = enemyHpBefore - game.enemy.getHp();
         if (dealtDamage > 0) {
-            for (RelicItem relic : game.ownedRelics) {
-                relic.onEnemyDamaged(game.player, game.enemy, game, dealtDamage);
-            }
+            DamagePipeline.resolve(game, dealtDamage);
         }
     }
 
