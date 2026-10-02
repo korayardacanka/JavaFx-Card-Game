@@ -239,8 +239,7 @@ public final class HeadlessSimulator {
         RelicItem bestRelic = null;
         int bestRelicScore = Integer.MIN_VALUE;
         for (RelicItem relic : game.currentBossRelics) {
-            if (relic.price > game.player.getGold()
-                    || (relic instanceof BloodPactRelic && game.player.getHp() <= 30)) {
+            if (relic.price > game.player.getGold() || !relic.canPurchase(game)) {
                 continue;
             }
             int score = relicScore(relic, game);
@@ -249,7 +248,8 @@ public final class HeadlessSimulator {
                 bestRelicScore = score;
             }
         }
-        if (bestRelic != null && bestRelicScore > 0 && game.player.spendGold(bestRelic.price)) {
+        if (bestRelic != null && bestRelicScore > 0 && bestRelic.canPurchase(game)
+                && game.player.spendGold(bestRelic.price)) {
             bestRelic.applyOnBuy(game.player, game);
             game.ownedRelics.add(bestRelic);
         }

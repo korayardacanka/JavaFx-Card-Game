@@ -82,6 +82,53 @@ public class BattleControllerTest {
     }
 
     @Test
+    public void handRerollDoesNotShuffleTheOldHandBackIntoASmallDeck() {
+        Game game = new Game();
+        game.enemy = EnemyFactory.createEnemy(1);
+        game.eventBus = new EventBus();
+        Card oldCard = CardFactory.make("Old", 1, 1, 1, new DamageEffect(1));
+        Card newCard = CardFactory.make("New", 1, 1, 1, new DamageEffect(1));
+        game.player.hand.add(oldCard);
+        game.player.hand.add(CardFactory.make("Old 2", 1, 1, 1, new DamageEffect(1)));
+        game.player.deck.add(newCard);
+        BattleController controller = createController(game, () -> {});
+
+        controller.handleHandReroll();
+
+        assertEquals(1, game.player.hand.size());
+        assertTrue(game.player.hand.contains(newCard));
+        assertTrue(!game.player.hand.contains(oldCard));
+        assertEquals(2, game.player.discard.size());
+        assertTrue(game.player.discard.contains(oldCard));
+    }
+
+    @Test
+    public void handUpgradeDrawsMissingCardsImmediatelyOnlyDuringPlayerTurn() {
+        Game game = new Game();
+        game.enemy = EnemyFactory.createEnemy(1);
+        game.eventBus = new EventBus();
+        game.player.addGold(100);
+        for (int i = 0; i < game.getHandSizeLimit(); i++) {
+            game.player.hand.add(CardFactory.make("Hand " + i, 1, 1, 1,
+                new DamageEffect(1)));
+        }
+        Card extraCard = CardFactory.make("Extra", 1, 1, 1, new DamageEffect(1));
+        game.player.deck.add(extraCard);
+        BattleController controller = createController(game, () -> {});
+
+        assertTrue(game.purchaseHandSizeUpgrade());
+        controller.setState(BattleController.BattleState.ENEMY_TURN);
+        controller.drawMissingHandCardsIfPlayerTurn();
+        assertEquals(4, game.player.hand.size());
+
+        controller.setState(BattleController.BattleState.PLAYER_TURN);
+        controller.drawMissingHandCardsIfPlayerTurn();
+
+        assertEquals(5, game.player.hand.size());
+        assertTrue(game.player.hand.contains(extraCard));
+    }
+
+    @Test
     public void enemyDeathResetsCombatFlowBackToPlayerTurn() throws Exception {
         Game game = new Game();
         game.player.restoreEnergy(3);

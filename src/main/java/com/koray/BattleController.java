@@ -1,7 +1,9 @@
 package com.koray;
 
-import javafx.scene.layout.VBox;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.function.Consumer;
+import javafx.scene.layout.VBox;
 
 /**
  * Controls all in-battle game logic.
@@ -143,8 +145,8 @@ public class BattleController {
     }
 
     /**
-     * Replaces the current hand with the same number of cards for 10 gold.
-     * The old hand is moved to the discard pile before drawing replacements.
+     * Replaces the current hand with the same number of cards for
+     * {@link #HAND_REROLL_COST} gold.
      */
     public void handleHandReroll() {
         if (!canPlayerAct()) return;
@@ -153,19 +155,31 @@ public class BattleController {
             return;
         }
         if (!game.player.spendGold(HAND_REROLL_COST)) {
-            onLog.accept("Not enough gold to reroll your hand (10 gold required).");
+            onLog.accept("Not enough gold to reroll your hand ("
+                + HAND_REROLL_COST + " gold required).");
             return;
         }
 
         int cardsToDraw = game.player.hand.size();
-        game.player.discard.addAll(game.player.hand);
+        List<Card> oldHand = new java.util.ArrayList<>(game.player.hand);
         game.player.hand.clear();
         for (int i = 0; i < cardsToDraw; i++) {
             deckManager.drawSingleCard();
         }
+        game.player.discard.addAll(oldHand);
 
         onUpdateUI.run();
-        onLog.accept("Hand rerolled for 10 gold.");
+        onLog.accept("Hand rerolled for " + HAND_REROLL_COST + " gold.");
+    }
+
+    /** Draws newly available hand slots immediately after a hand-size upgrade. */
+    void drawMissingHandCardsIfPlayerTurn() {
+        if (battleState != BattleState.PLAYER_TURN) return;
+
+        int cardsToDraw = game.getHandSizeLimit() - game.player.hand.size();
+        for (int i = 0; i < cardsToDraw; i++) {
+            deckManager.drawSingleCard();
+        }
     }
 
     // ── Turn processing ───────────────────────────────────────────────────────
@@ -340,10 +354,7 @@ public class BattleController {
             relic.applyPassive(game.player, game);
         }
 
-        int cardsToDraw = game.getHandSizeLimit() - game.player.hand.size();
-        for (int i = 0; i < cardsToDraw; i++) {
-            deckManager.drawSingleCard();
-        }
+        drawMissingHandCardsIfPlayerTurn();
 
         onUpdateUI.run();
         onLog.accept("New turn started.");

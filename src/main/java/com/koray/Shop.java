@@ -12,7 +12,8 @@ public class Shop {
 
     private static Stage currentStage;
 
-    public static void open(Game game, Stage owner, Runnable onGameStateChanged) {
+    public static void open(Game game, Stage owner, Runnable onGameStateChanged,
+                            Runnable onHandSizeChanged) {
 
         // Close the previous shop if it is still open.
         if (currentStage != null && currentStage.isShowing()) {
@@ -35,6 +36,8 @@ public class Shop {
         List<Button> shopCardButtons = new ArrayList<>();
         List<Card> availableShopCards = new ArrayList<>();
         Set<Button> purchasedCardButtons = new HashSet<>();
+        List<RelicItem> availableBossRelics = new ArrayList<>();
+        List<Button> bossRelicButtons = new ArrayList<>();
 
         Button handUpgradeButton = new Button();
         updateHandUpgradeButton(handUpgradeButton, game);
@@ -43,12 +46,14 @@ public class Shop {
             if (game.purchaseHandSizeUpgrade()) {
                 info.setText("Hand size increased to " + game.getHandSizeLimit() + " cards.");
                 goldLabel.setText("Gold: " + game.player.getGold());
+                onHandSizeChanged.run();
                 onGameStateChanged.run();
             } else {
                 info.setText("❌ Not enough gold!");
             }
             updateHandUpgradeButton(handUpgradeButton, game);
             updateShopCardButtons(game, availableShopCards, shopCardButtons, purchasedCardButtons);
+            updateBossRelicButtons(game, availableBossRelics, bossRelicButtons);
         });
         Label upgradeTitle = new Label("── Permanent Upgrade ──");
         upgradeTitle.setStyle("-fx-font-weight:bold;");
@@ -82,6 +87,7 @@ public class Shop {
                         updateHandUpgradeButton(handUpgradeButton, game);
                         updateShopCardButtons(game, availableShopCards, shopCardButtons,
                             purchasedCardButtons);
+                        updateBossRelicButtons(game, availableBossRelics, bossRelicButtons);
                     } else {
                         info.setText("❌ Not enough gold!");
                     }
@@ -98,29 +104,18 @@ public class Shop {
             content.getChildren().add(sep);
 
             for (RelicItem relic : game.currentBossRelics) {
-                boolean alreadyOwned = game.ownedRelics.stream()
-                    .anyMatch(r -> r.name.equals(relic.name));
-                boolean bloodPactLocked = relic instanceof BloodPactRelic
-                    && game.player.getHp() <= 30;
-
                 Button btn = new Button(
                     relic.name + "  |  " + relic.description +
                     "  |  " + relic.price + " gold"
                 );
                 btn.setMaxWidth(Double.MAX_VALUE);
                 btn.setStyle("-fx-background-color:#fff3cd;");
-                if (alreadyOwned) {
-                    btn.setText(btn.getText() + "  [Owned]");
-                    btn.setDisable(true);
-                }
-                if (bloodPactLocked) {
-                    btn.setText(btn.getText() + "  [Requires HP > 30]");
-                    btn.setDisable(true);
-                }
+                availableBossRelics.add(relic);
+                bossRelicButtons.add(btn);
 
                 btn.setOnAction(e -> {
-                    if (bloodPactLocked) {
-                        info.setText("❌ You need more than 30 HP to buy Blood Pact.");
+                    if (!relic.canPurchase(game)) {
+                        info.setText("❌ Requirements not met for " + relic.name + ".");
                         return;
                     }
                     if (game.player.spendGold(relic.price)) {
@@ -129,16 +124,17 @@ public class Shop {
                         game.eventBus.publish(new RelicEvent(relic));
                         info.setText("✨ Purchased: " + relic.name);
                         goldLabel.setText("Gold: " + game.player.getGold());
-                        btn.setDisable(true);
                         updateHandUpgradeButton(handUpgradeButton, game);
                         updateShopCardButtons(game, availableShopCards, shopCardButtons,
                             purchasedCardButtons);
+                        updateBossRelicButtons(game, availableBossRelics, bossRelicButtons);
                     } else {
                         info.setText("❌ Not enough gold!");
                     }
                 });
                 content.getChildren().add(btn);
             }
+            updateBossRelicButtons(game, availableBossRelics, bossRelicButtons);
 
         }
 
@@ -193,12 +189,29 @@ public class Shop {
         return game.currentBossRelics.stream().anyMatch(relic -> {
             boolean alreadyOwned = game.ownedRelics.stream()
                 .anyMatch(owned -> owned.name.equals(relic.name));
-            boolean bloodPactLocked = relic instanceof BloodPactRelic
-                && game.player.getHp() <= 30;
             return !alreadyOwned
-                && !bloodPactLocked
+                && relic.canPurchase(game)
                 && game.player.getGold() >= relic.price;
         });
+    }
+
+    private static void updateBossRelicButtons(Game game, List<RelicItem> relics,
+                                                List<Button> buttons) {
+        for (int i = 0; i < relics.size(); i++) {
+            RelicItem relic = relics.get(i);
+            Button button = buttons.get(i);
+            boolean alreadyOwned = game.ownedRelics.stream()
+                .anyMatch(owned -> owned.name.equals(relic.name));
+            boolean canPurchase = relic.canPurchase(game);
+            String status = alreadyOwned ? "  [Owned]"
+                : !canPurchase && relic instanceof BloodPactRelic
+                    ? "  [Requires HP + Shield > 30]" : "";
+
+            button.setText(relic.name + "  |  " + relic.description
+                + "  |  " + relic.price + " gold" + status);
+            button.setDisable(alreadyOwned || !canPurchase
+                || game.player.getGold() < relic.price);
+        }
     }
 
     private static void updateHandUpgradeButton(Button button, Game game) {

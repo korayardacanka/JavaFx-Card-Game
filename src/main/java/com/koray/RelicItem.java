@@ -38,6 +38,9 @@ public abstract class RelicItem {
 
     // ── Lifecycle hooks (override as needed) ──────────────────────────────
 
+    /** Returns whether the current game state permits purchasing this relic. */
+    public boolean canPurchase(Game game) { return true; }
+
     /**
      * Called once, immediately after the player buys this relic.
      * Use for one-time stat changes (max HP, max energy, etc.).

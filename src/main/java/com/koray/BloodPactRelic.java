@@ -14,6 +14,11 @@ class BloodPactRelic extends RelicItem {
               0); // free to buy, but costs 30 HP
     }
 
+    @Override
+    public boolean canPurchase(Game game) {
+        return game.player.getHp() + game.player.getShield() > 30;
+    }
+
     /**
      * Called once when the player buys this relic.
      * Deals 30 damage to the player and raises max energy by 2.
@@ -23,8 +28,8 @@ class BloodPactRelic extends RelicItem {
      */
     @Override
     public void applyOnBuy(Player player, Game game) {
-        if (player.getHp() <= 30) {
-            game.lastEvent = "❌ You need more than 30 HP to buy Blood Pact.";
+        if (!canPurchase(game)) {
+            game.lastEvent = "❌ You need more than 30 combined HP and Shield to buy Blood Pact.";
             return;
         }
 

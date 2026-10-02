@@ -42,7 +42,7 @@ public class EnemyFactoryTest {
     }
 
     @Test
-    public void bloodPactRequiresMoreThanThirtyHpAndLogsTheGainCorrectly() {
+    public void bloodPactRequiresMoreThanThirtyCombinedHpAndShieldAndLogsTheGainCorrectly() {
         Game game = new Game();
         game.maxEnergy = 3;
 
@@ -58,7 +58,7 @@ public class EnemyFactoryTest {
         relic.applyOnBuy(game.player, game);
         assertEquals(30, game.player.getHp());
         assertEquals(5, game.maxEnergy);
-        assertTrue(game.lastEvent.contains("more than 30 HP"));
+        assertTrue(game.lastEvent.contains("combined HP and Shield"));
 
         game.player.heal(5);
         assertEquals(35, game.player.getHp());

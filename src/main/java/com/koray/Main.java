@@ -239,7 +239,8 @@ public class Main extends Application {
         updateBackground();
         updateEnemyVisuals();
         updateUI();
-        Shop.open(game, primaryStage, this::updateUI);
+        Shop.open(game, primaryStage, this::updateUI,
+            () -> battleController.drawMissingHandCardsIfPlayerTurn());
     }
 
     // ── Background ────────────────────────────────────────────────────────────

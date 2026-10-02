@@ -36,6 +36,24 @@ public class ShopTest {
     }
 
     @Test
+    public void bloodPactCountsShieldTowardItsPurchaseRequirement() {
+        Game game = new Game();
+        BloodPactRelic relic = new BloodPactRelic();
+        game.currentBossRelics.add(relic);
+        game.player.takeDamage(80);
+        game.player.addShield(10);
+
+        assertEquals(30, game.player.getHp() + game.player.getShield());
+        assertFalse(relic.canPurchase(game));
+        assertFalse(Shop.hasPurchasableBossRelic(game));
+
+        game.player.addShield(1);
+
+        assertTrue(relic.canPurchase(game));
+        assertTrue(Shop.hasPurchasableBossRelic(game));
+    }
+
+    @Test
     public void handSizeUpgradeCostsIncreaseAndRaiseThePersistentHandLimit() {
         Game game = new Game();
         assertEquals(4, game.getHandSizeLimit());
