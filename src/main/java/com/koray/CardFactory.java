@@ -112,9 +112,9 @@ public class CardFactory {
     public static List<Card> shopCards(int level, Player player, Random random) {
         // Collect names of cards the player already owns across all piles
         Set<String> owned = new HashSet<>();
-        for (Card c : player.deck)    owned.add(c.name);
-        for (Card c : player.hand)    owned.add(c.name);
-        for (Card c : player.discard) owned.add(c.name);
+        for (Card c : player.getDeck())    owned.add(c.name);
+        for (Card c : player.getHand())    owned.add(c.name);
+        for (Card c : player.getDiscard()) owned.add(c.name);
 
         // Build a name-keyed map to prevent duplicate entries in the shop
         Map<String, Card> poolMap = new LinkedHashMap<>();

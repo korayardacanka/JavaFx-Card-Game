@@ -24,158 +24,152 @@ public class BattleControllerTest {
     @Test
     public void handleCardPlayIgnoresInputWhileTurnLocked() {
         Game game = new Game();
-        game.player.restoreEnergy(3);
-        game.enemy = EnemyFactory.createEnemy(1);
-        game.eventBus = new EventBus();
+        game.getPlayer().restoreEnergy(3);
+        game.setEnemy(EnemyFactory.createEnemy(1));
+        game.setEventBus(new EventBus());
 
         Card attack = CardFactory.make("Strike", 1, 10, 1, new DamageEffect(15));
-        game.player.hand.add(attack);
+        game.getPlayer().addToHand(attack);
         BattleController controller = createController(game, () -> {});
         controller.setState(BattleController.BattleState.ENEMY_TURN);
 
         controller.handleCardPlay(attack, new VBox());
 
-        assertEquals(3, game.player.getEnergy());
-        assertEquals(1, game.player.hand.size());
-        assertTrue(game.player.hand.contains(attack));
+        assertEquals(3, game.getPlayer().getEnergy());
+        assertEquals(1, game.getPlayer().getHand().size());
+        assertTrue(game.getPlayer().getHand().contains(attack));
     }
 
     @Test
     public void handRerollCostsTenGoldAndReplacesHandWithSameNumberOfCards() {
         Game game = new Game();
-        game.enemy = EnemyFactory.createEnemy(1);
-        game.eventBus = new EventBus();
+        game.setEnemy(EnemyFactory.createEnemy(1));
+        game.setEventBus(new EventBus());
         for (int i = 0; i < 4; i++) {
-            game.player.hand.add(CardFactory.make("Old " + i, 1, 1, 1, new DamageEffect(1)));
-            game.player.deck.add(CardFactory.make("New " + i, 1, 1, 1, new DamageEffect(1)));
+            game.getPlayer().addToHand(CardFactory.make("Old " + i, 1, 1, 1, new DamageEffect(1)));
+            game.getPlayer().addToDeck(CardFactory.make("New " + i, 1, 1, 1, new DamageEffect(1)));
         }
-        java.util.List<Card> oldHand = new java.util.ArrayList<>(game.player.hand);
+        java.util.List<Card> oldHand = new java.util.ArrayList<>(game.getPlayer().getHand());
         BattleController controller = createController(game, () -> {});
 
         controller.handleHandReroll();
 
-        assertEquals(40, game.player.getGold());
-        assertEquals(4, game.player.hand.size());
-        assertEquals(4, game.player.discard.size());
-        assertTrue(game.player.discard.containsAll(oldHand));
+        assertEquals(40, game.getPlayer().getGold());
+        assertEquals(4, game.getPlayer().getHand().size());
+        assertEquals(4, game.getPlayer().getDiscard().size());
+        assertTrue(game.getPlayer().getDiscard().containsAll(oldHand));
         for (Card card : oldHand) {
-            assertTrue(!game.player.hand.contains(card));
+            assertTrue(!game.getPlayer().getHand().contains(card));
         }
     }
 
     @Test
     public void handRerollDoesNothingWithoutEnoughGold() {
         Game game = new Game();
-        game.enemy = EnemyFactory.createEnemy(1);
-        game.eventBus = new EventBus();
-        while (game.player.spendGold(1)) {}
+        game.setEnemy(EnemyFactory.createEnemy(1));
+        game.setEventBus(new EventBus());
+        while (game.getPlayer().spendGold(1)) {}
         Card card = CardFactory.make("Strike", 1, 1, 1, new DamageEffect(1));
-        game.player.hand.add(card);
+        game.getPlayer().addToHand(card);
         BattleController controller = createController(game, () -> {});
 
         controller.handleHandReroll();
 
-        assertEquals(0, game.player.getGold());
-        assertEquals(1, game.player.hand.size());
-        assertTrue(game.player.hand.contains(card));
-        assertTrue(game.player.discard.isEmpty());
+        assertEquals(0, game.getPlayer().getGold());
+        assertEquals(1, game.getPlayer().getHand().size());
+        assertTrue(game.getPlayer().getHand().contains(card));
+        assertTrue(game.getPlayer().getDiscard().isEmpty());
     }
 
     @Test
     public void handRerollDoesNotShuffleTheOldHandBackIntoASmallDeck() {
         Game game = new Game();
-        game.enemy = EnemyFactory.createEnemy(1);
-        game.eventBus = new EventBus();
+        game.setEnemy(EnemyFactory.createEnemy(1));
+        game.setEventBus(new EventBus());
         Card oldCard = CardFactory.make("Old", 1, 1, 1, new DamageEffect(1));
         Card newCard = CardFactory.make("New", 1, 1, 1, new DamageEffect(1));
-        game.player.hand.add(oldCard);
-        game.player.hand.add(CardFactory.make("Old 2", 1, 1, 1, new DamageEffect(1)));
-        game.player.deck.add(newCard);
+        game.getPlayer().addToHand(oldCard);
+        game.getPlayer().addToHand(CardFactory.make("Old 2", 1, 1, 1, new DamageEffect(1)));
+        game.getPlayer().addToDeck(newCard);
         BattleController controller = createController(game, () -> {});
 
         controller.handleHandReroll();
 
-        assertEquals(1, game.player.hand.size());
-        assertTrue(game.player.hand.contains(newCard));
-        assertTrue(!game.player.hand.contains(oldCard));
-        assertEquals(2, game.player.discard.size());
-        assertTrue(game.player.discard.contains(oldCard));
+        assertEquals(1, game.getPlayer().getHand().size());
+        assertTrue(game.getPlayer().getHand().contains(newCard));
+        assertTrue(!game.getPlayer().getHand().contains(oldCard));
+        assertEquals(2, game.getPlayer().getDiscard().size());
+        assertTrue(game.getPlayer().getDiscard().contains(oldCard));
     }
 
     @Test
     public void handUpgradeDrawsMissingCardsImmediatelyOnlyDuringPlayerTurn() {
         Game game = new Game();
-        game.enemy = EnemyFactory.createEnemy(1);
-        game.eventBus = new EventBus();
-        game.player.addGold(100);
+        game.setEnemy(EnemyFactory.createEnemy(1));
+        game.setEventBus(new EventBus());
+        game.getPlayer().addGold(100);
         for (int i = 0; i < game.getHandSizeLimit(); i++) {
-            game.player.hand.add(CardFactory.make("Hand " + i, 1, 1, 1,
+            game.getPlayer().addToHand(CardFactory.make("Hand " + i, 1, 1, 1,
                 new DamageEffect(1)));
         }
         Card extraCard = CardFactory.make("Extra", 1, 1, 1, new DamageEffect(1));
-        game.player.deck.add(extraCard);
+        game.getPlayer().addToDeck(extraCard);
         BattleController controller = createController(game, () -> {});
 
         assertTrue(game.purchaseHandSizeUpgrade());
         controller.setState(BattleController.BattleState.ENEMY_TURN);
         controller.drawMissingHandCardsIfPlayerTurn();
-        assertEquals(4, game.player.hand.size());
+        assertEquals(4, game.getPlayer().getHand().size());
 
         controller.setState(BattleController.BattleState.PLAYER_TURN);
         controller.drawMissingHandCardsIfPlayerTurn();
 
-        assertEquals(5, game.player.hand.size());
-        assertTrue(game.player.hand.contains(extraCard));
+        assertEquals(5, game.getPlayer().getHand().size());
+        assertTrue(game.getPlayer().getHand().contains(extraCard));
     }
 
     @Test
-    public void enemyDeathResetsCombatFlowBackToPlayerTurn() throws Exception {
+    public void enemyDeathResetsCombatFlowBackToPlayerTurn() {
         Game game = new Game();
-        game.player.restoreEnergy(3);
-        game.enemy = EnemyFactory.createEnemy(1);
-        game.eventBus = new EventBus();
+        game.getPlayer().restoreEnergy(3);
+        game.setEnemy(EnemyFactory.createEnemy(1));
+        game.setEventBus(new EventBus());
         BattleController controller = createController(game, () -> {});
         controller.setState(BattleController.BattleState.ANIMATING);
 
-        game.enemy.takeDamage(game.enemy.getMaxHp());
-        java.lang.reflect.Method handleEnemyDeath = BattleController.class.getDeclaredMethod("handleEnemyDeath");
-        handleEnemyDeath.setAccessible(true);
-        handleEnemyDeath.invoke(controller);
+        game.getEnemy().takeDamage(game.getEnemy().getMaxHp());
+        controller.handleEnemyDeath();
 
         assertEquals(BattleController.BattleState.PLAYER_TURN, controller.getState());
     }
 
     @Test
-    public void deadPlayerCannotStartANewTurn() throws Exception {
+    public void deadPlayerCannotStartANewTurn() {
         Game game = new Game();
-        game.player.takeDamage(100);
-        game.player.restoreEnergy(0);
-        game.enemy = EnemyFactory.createEnemy(1);
+        game.getPlayer().takeDamage(100);
+        game.getPlayer().restoreEnergy(0);
+        game.setEnemy(EnemyFactory.createEnemy(1));
         BattleController controller = createController(game, () -> {});
 
-        java.lang.reflect.Method startNewTurn = BattleController.class.getDeclaredMethod("startNewTurn");
-        startNewTurn.setAccessible(true);
-        startNewTurn.invoke(controller);
+        controller.startNewTurn();
 
         assertEquals(BattleController.BattleState.GAME_OVER, controller.getState());
-        assertEquals(0, game.player.getEnergy());
+        assertEquals(0, game.getPlayer().getEnergy());
     }
 
     @Test
-    public void deadPlayerDoesNotProcessEnemyRewards() throws Exception {
+    public void deadPlayerDoesNotProcessEnemyRewards() {
         Game game = new Game();
-        game.player.takeDamage(100);
-        game.enemy = EnemyFactory.createEnemy(1);
-        game.enemy.takeDamage(game.enemy.getMaxHp());
+        game.getPlayer().takeDamage(100);
+        game.setEnemy(EnemyFactory.createEnemy(1));
+        game.getEnemy().takeDamage(game.getEnemy().getMaxHp());
         int[] enemyDeathCallbacks = {0};
         BattleController controller = createController(game, () -> enemyDeathCallbacks[0]++);
 
-        java.lang.reflect.Method handleEnemyDeath = BattleController.class.getDeclaredMethod("handleEnemyDeath");
-        handleEnemyDeath.setAccessible(true);
-        handleEnemyDeath.invoke(controller);
+        controller.handleEnemyDeath();
 
         assertEquals(BattleController.BattleState.GAME_OVER, controller.getState());
-        assertEquals(1, game.level);
+        assertEquals(1, game.getLevel());
         assertEquals(0, enemyDeathCallbacks[0]);
     }
 

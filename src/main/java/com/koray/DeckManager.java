@@ -1,6 +1,7 @@
 package com.koray;
 
 import java.util.Collections;
+import java.util.List;
 import java.util.Random;
 
 /**
@@ -32,12 +33,10 @@ public class DeckManager {
      * Each starter card is added INITIAL_DECK_COPIES times, then shuffled.
      */
     public void resetPlayerDeck() {
-        game.player.deck.clear();
-        game.player.hand.clear();
-        game.player.discard.clear();
-
-        game.player.deck.addAll(CardFactory.starterDeck());
-        Collections.shuffle(game.player.deck, random);
+        game.getPlayer().clearCardPiles();
+        List<Card> starterDeck = CardFactory.starterDeck();
+        Collections.shuffle(starterDeck, random);
+        game.getPlayer().resetDeck(starterDeck);
     }
 
     /**
@@ -45,7 +44,7 @@ public class DeckManager {
      * Clears any existing hand before drawing.
      */
     public void drawHand() {
-        game.player.hand.clear();
+        game.getPlayer().clearHand();
         for (int i = 0; i < game.getHandSizeLimit(); i++) {
             drawSingleCard();
         }
@@ -57,13 +56,6 @@ public class DeckManager {
      * If both piles are empty, no card is drawn.
      */
     public void drawSingleCard() {
-        if (game.player.deck.isEmpty()) {
-            game.player.deck.addAll(game.player.discard);
-            game.player.discard.clear();
-            Collections.shuffle(game.player.deck, random);
-        }
-        if (!game.player.deck.isEmpty()) {
-            game.player.hand.add(game.player.deck.remove(0));
-        }
+        game.getPlayer().drawCard(random);
     }
 }

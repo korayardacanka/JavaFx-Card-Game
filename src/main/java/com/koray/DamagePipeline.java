@@ -7,13 +7,13 @@ public final class DamagePipeline {
 
     public static DamageContext resolve(Game game, int baseDamage) {
         DamageContext context = new DamageContext(baseDamage);
-        for (RelicItem relic : game.ownedRelics) {
-            relic.addDamageBonus(game.player, game.enemy, game, context);
+        for (RelicItem relic : game.getOwnedRelics()) {
+            relic.addDamageBonus(game.getPlayer(), game.getEnemy(), game, context);
         }
 
-        context.applyBonusDamage(game.enemy);
-        for (RelicItem relic : game.ownedRelics) {
-            relic.onEnemyDamaged(game.player, game.enemy, game, context);
+        context.applyBonusDamage(game.getEnemy());
+        for (RelicItem relic : game.getOwnedRelics()) {
+            relic.onEnemyDamaged(game.getPlayer(), game.getEnemy(), game, context);
         }
         return context;
     }

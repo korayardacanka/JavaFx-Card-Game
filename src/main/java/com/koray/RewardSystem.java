@@ -31,12 +31,12 @@ public class RewardSystem implements Observer {
     public void onEvent(GameEvent event) {
         if (event instanceof EnemyDeathEvent e) {
             if (e.enemy.isBoss()) {
-                game.player.addGold(50);
-                game.eventLog.set("💀 Boss defeated! +50 gold");
+                game.getPlayer().addGold(50);
+                game.getEventLog().set("💀 Boss defeated! +50 gold");
             } else {
-                int goldGain = 10 + (game.level * 3);
-                game.player.addGold(goldGain);
-                game.eventLog.set("Enemy defeated! +" + goldGain + " gold");
+                int goldGain = 10 + (game.getLevel() * 3);
+                game.getPlayer().addGold(goldGain);
+                game.getEventLog().set("Enemy defeated! +" + goldGain + " gold");
             }
         }
     }

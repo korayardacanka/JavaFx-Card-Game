@@ -73,20 +73,20 @@ public class HudView {
     }
 
     public void update(Game game) {
-        goldLabel.setText("Gold: " + game.player.getGold());
-        deckCountsLabel.setText("Deck " + game.player.deck.size()
-            + " | Discard " + game.player.discard.size());
-        energyLabel.setText("Energy: " + game.player.getEnergy() + " / " + game.maxEnergy);
-        levelLabel.setText("LEVEL " + game.level);
-        hpLabel.setText("❤  " + game.player.getHp() + " / " + game.player.getMaxHp());
+        goldLabel.setText("Gold: " + game.getPlayer().getGold());
+        deckCountsLabel.setText("Deck " + game.getPlayer().getDeck().size()
+            + " | Discard " + game.getPlayer().getDiscard().size());
+        energyLabel.setText("Energy: " + game.getPlayer().getEnergy() + " / " + game.getMaxEnergy());
+        levelLabel.setText("LEVEL " + game.getLevel());
+        hpLabel.setText("❤  " + game.getPlayer().getHp() + " / " + game.getPlayer().getMaxHp());
 
-        double playerHealthRatio = (double) game.player.getHp() / game.player.getMaxHp();
+        double playerHealthRatio = (double) game.getPlayer().getHp() / game.getPlayer().getMaxHp();
         hpBar.setProgress(Math.max(0, playerHealthRatio));
         hpBar.setStyle("-fx-accent: " + healthColor(playerHealthRatio) + ";");
 
-        if (game.player.getShield() > 0) {
-            shieldLabel.setText("🛡  " + game.player.getShield());
-            shieldBar.setProgress(Math.min(1.0, game.player.getShield() / UIConstants.SHIELD_MAX));
+        if (game.getPlayer().getShield() > 0) {
+            shieldLabel.setText("🛡  " + game.getPlayer().getShield());
+            shieldBar.setProgress(Math.min(1.0, game.getPlayer().getShield() / UIConstants.SHIELD_MAX));
             shieldLabel.setVisible(true);
             shieldBar.setVisible(true);
         } else {
@@ -94,7 +94,7 @@ public class HudView {
             shieldBar.setVisible(false);
         }
 
-        Enemy enemy = game.enemy;
+        Enemy enemy = game.getEnemy();
         enemyHpLabel.setText(
             (enemy.isBoss() ? "⚠️  " : "") + enemy.getName()
             + "\nHP: " + enemy.getHp() + " / " + enemy.getMaxHp()
@@ -112,7 +112,7 @@ public class HudView {
         statusLabel.setText(statuses.toString().trim());
 
         relicsBox.getChildren().clear();
-        for (RelicItem relic : game.ownedRelics) {
+        for (RelicItem relic : game.getOwnedRelics()) {
             String[] nameParts = relic.name.split(" ", 2);
             Label icon = new Label(nameParts[0]);
             icon.setStyle("-fx-text-fill: #ffe866; -fx-font-size:16px;");

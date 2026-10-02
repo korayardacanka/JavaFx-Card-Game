@@ -1,6 +1,8 @@
 package com.koray;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 /**
  * Central game state container.
@@ -8,41 +10,72 @@ import java.util.*;
  * the player, the current enemy, the level counter, relics, shop contents,
  * and the EventBus used to decouple subsystems.
  *
- * This class intentionally contains no logic — it is a plain data object.
+ * State is exposed through getters and purpose-specific mutation methods.
  * Combat flow and turn rules live in BattleController; other rules are
  * implemented by the relevant domain classes.
  */
 public class Game {
 
     /** The player character — stats, deck, hand, discard pile. */
-    Player player    = new Player();
+    private final Player player = new Player();
 
     /** The current enemy the player is fighting. Replaced on enemy death. */
-    Enemy  enemy     = new Enemy();
+    private Enemy enemy = new Enemy();
 
     /** Current game level (increments each time an enemy is defeated). */
-    int    level     = 1;
+    private int level = 1;
 
     /** Event messages shown in the UI log. */
-    final EventLog eventLog = new EventLog();
+    private final EventLog eventLog = new EventLog();
 
     /** Event bus for decoupled communication between game subsystems. */
-    public EventBus eventBus;
+    private EventBus eventBus;
 
     /** Maximum energy the player restores at the start of each turn. */
-    int maxEnergy = 3;
+    private int maxEnergy = 3;
 
     /** Number of permanent hand-size upgrades purchased (maximum 3). */
     private int handSizeUpgradeLevel;
 
     /** Cards currently available for purchase in the shop. */
-    List<Card>      currentShopCards  = new ArrayList<>();
+    private List<Card> currentShopCards = new ArrayList<>();
 
     /** Boss-reward relics available after a boss kill (cleared after shop closes). */
-    List<RelicItem> currentBossRelics = new ArrayList<>();
+    private final List<RelicItem> currentBossRelics = new ArrayList<>();
 
     /** All relics the player has purchased and owns. */
-    List<RelicItem> ownedRelics       = new ArrayList<>();
+    private final List<RelicItem> ownedRelics = new ArrayList<>();
+
+    public Player getPlayer() { return player; }
+    public Enemy getEnemy() { return enemy; }
+    public int getLevel() { return level; }
+    public int getMaxEnergy() { return maxEnergy; }
+    public EventBus getEventBus() { return eventBus; }
+    public EventLog getEventLog() { return eventLog; }
+    public List<Card> getCurrentShopCards() {
+        return Collections.unmodifiableList(currentShopCards);
+    }
+    public List<RelicItem> getCurrentBossRelics() {
+        return Collections.unmodifiableList(currentBossRelics);
+    }
+    public List<RelicItem> getOwnedRelics() {
+        return Collections.unmodifiableList(ownedRelics);
+    }
+
+    public void setEnemy(Enemy enemy) { this.enemy = enemy; }
+    public void setEventBus(EventBus eventBus) { this.eventBus = eventBus; }
+    void advanceLevel() { level++; }
+    public void increaseMaxEnergy(int amount) { maxEnergy += amount; }
+    public void setCurrentShopCards(List<Card> cards) {
+        currentShopCards = new ArrayList<>(cards);
+    }
+    public void setCurrentBossRelics(List<RelicItem> relics) {
+        currentBossRelics.clear();
+        currentBossRelics.addAll(relics);
+    }
+    public void addCurrentBossRelic(RelicItem relic) { currentBossRelics.add(relic); }
+    public void clearCurrentBossRelics() { currentBossRelics.clear(); }
+    public void addOwnedRelic(RelicItem relic) { ownedRelics.add(relic); }
 
     public int getHandSizeLimit() {
         return UIConstants.INITIAL_HAND_SIZE + handSizeUpgradeLevel;
@@ -73,7 +106,7 @@ public class Game {
             level,
             player.getGold(),
             ownedRelics.stream().map(relic -> relic.name).toList(),
-            player.deck.size() + player.hand.size() + player.discard.size()
+            player.getDeck().size() + player.getHand().size() + player.getDiscard().size()
         );
     }
 }

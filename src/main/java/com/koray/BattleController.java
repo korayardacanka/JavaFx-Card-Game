@@ -87,7 +87,7 @@ public class BattleController {
 
     /** Returns true when the player is allowed to act in the current turn. */
     public boolean canPlayerAct() {
-        return battleState == BattleState.PLAYER_TURN && game.player.isAlive();
+        return battleState == BattleState.PLAYER_TURN && game.getPlayer().isAlive();
     }
 
     void setState(BattleState newState) {
@@ -106,17 +106,16 @@ public class BattleController {
      */
     public void handleCardPlay(Card c, VBox cardBox) {
         if (!canPlayerAct()) return;
-        if (!game.player.spendEnergy(c.cost)) return;
+        if (!game.getPlayer().spendEnergy(c.cost)) return;
 
         setState(BattleState.ANIMATING);
 
-        int enemyHpBefore = game.enemy.getHp();
-        c.use(game.player, game.enemy);
-        game.player.hand.remove(c);
-        game.player.discard.add(c);
+        int enemyHpBefore = game.getEnemy().getHp();
+        c.use(game.getPlayer(), game.getEnemy());
+        game.getPlayer().moveHandCardToDiscard(c);
 
         // Resolve bonuses before firing any relics that react to final damage.
-        int dealtDamage = enemyHpBefore - game.enemy.getHp();
+        int dealtDamage = enemyHpBefore - game.getEnemy().getHp();
         if (dealtDamage > 0) {
             enemyAnimator.playHurt(null);
             DamagePipeline.resolve(game, dealtDamage);
@@ -131,7 +130,7 @@ public class BattleController {
         }
 
         // Animate the card flying off, then update UI or handle enemy death
-        if (!game.enemy.isAlive()) {
+        if (!game.getEnemy().isAlive()) {
             animator.playCardEffect(cardBox,
                 () -> enemyAnimator.playDeath(this::handleEnemyDeath));
         } else {
@@ -148,23 +147,23 @@ public class BattleController {
      */
     public void handleHandReroll() {
         if (!canPlayerAct()) return;
-        if (game.player.hand.isEmpty()) {
+        if (game.getPlayer().getHand().isEmpty()) {
             onLog.accept("There are no cards in hand to reroll.");
             return;
         }
-        if (!game.player.spendGold(HAND_REROLL_COST)) {
+        if (!game.getPlayer().spendGold(HAND_REROLL_COST)) {
             onLog.accept("Not enough gold to reroll your hand ("
                 + HAND_REROLL_COST + " gold required).");
             return;
         }
 
-        int cardsToDraw = game.player.hand.size();
-        List<Card> oldHand = new java.util.ArrayList<>(game.player.hand);
-        game.player.hand.clear();
+        int cardsToDraw = game.getPlayer().getHand().size();
+        List<Card> oldHand = new java.util.ArrayList<>(game.getPlayer().getHand());
+        game.getPlayer().clearHand();
         for (int i = 0; i < cardsToDraw; i++) {
             deckManager.drawSingleCard();
         }
-        game.player.discard.addAll(oldHand);
+        game.getPlayer().moveHandToDiscard(oldHand);
 
         onUpdateUI.run();
         onLog.accept("Hand rerolled for " + HAND_REROLL_COST + " gold.");
@@ -174,7 +173,7 @@ public class BattleController {
     void drawMissingHandCardsIfPlayerTurn() {
         if (battleState != BattleState.PLAYER_TURN) return;
 
-        int cardsToDraw = game.getHandSizeLimit() - game.player.hand.size();
+        int cardsToDraw = game.getHandSizeLimit() - game.getPlayer().getHand().size();
         for (int i = 0; i < cardsToDraw; i++) {
             deckManager.drawSingleCard();
         }
@@ -199,21 +198,21 @@ public class BattleController {
         Shop.closeShop();
 
         // 1. Apply status effects (poison/burn damage, freeze log)
-        int enemyHpBeforeStatus = game.enemy.getHp();
-        String statusLog = game.enemy.processStatusEffects();
+        int enemyHpBeforeStatus = game.getEnemy().getHp();
+        String statusLog = game.getEnemy().processStatusEffects();
         if (!statusLog.isEmpty()) {
-            game.eventLog.set(statusLog);
+            game.getEventLog().set(statusLog);
         }
 
         // 2. Did enemy die from status effects?
-        if (!game.enemy.isAlive()) {
+        if (!game.getEnemy().isAlive()) {
             onUpdateUI.run();
             setState(BattleState.ANIMATING);
             enemyAnimator.playDeath(this::finishEnemyDeathTurn);
             return;
         }
 
-        if (game.enemy.getHp() < enemyHpBeforeStatus) {
+        if (game.getEnemy().getHp() < enemyHpBeforeStatus) {
             setState(BattleState.ANIMATING);
             enemyAnimator.playHurt(this::resolveEnemyTurnAttack);
         } else {
@@ -222,22 +221,22 @@ public class BattleController {
     }
 
     private void resolveEnemyTurnAttack() {
-        boolean enemyWasFrozen = game.enemy.isFrozen();
+        boolean enemyWasFrozen = game.getEnemy().isFrozen();
 
         // Enemy attacks
-        int playerHpBefore = game.player.getHp();
-        game.enemy.attack(game.player);
-        int damageTaken = playerHpBefore - game.player.getHp();
+        int playerHpBefore = game.getPlayer().getHp();
+        game.getEnemy().attack(game.getPlayer());
+        int damageTaken = playerHpBefore - game.getPlayer().getHp();
 
         // 4. Fire onDamageTaken hooks (e.g. ThornRelic reflects damage)
         if (damageTaken > 0) {
-            for (RelicItem r : game.ownedRelics) {
-                r.onDamageTaken(game.player, game.enemy, game, damageTaken);
+            for (RelicItem r : game.getOwnedRelics()) {
+                r.onDamageTaken(game.getPlayer(), game.getEnemy(), game, damageTaken);
             }
         }
 
         // 5. Did relic retaliation kill the enemy?
-        if (!game.enemy.isAlive()) {
+        if (!game.getEnemy().isAlive()) {
             onUpdateUI.run();
             setState(BattleState.ANIMATING);
             if (enemyWasFrozen) {
@@ -257,7 +256,7 @@ public class BattleController {
 
         // Only react to a hit when the enemy actually removed player HP.
         Runnable finishTurn = () -> {
-            if (!game.player.isAlive()) {
+            if (!game.getPlayer().isAlive()) {
                 checkPlayerDeath();
             } else {
                 startNewTurn();
@@ -290,30 +289,31 @@ public class BattleController {
      *
      * Safe to call multiple times — exits immediately if the enemy is still alive.
      */
-    private void handleEnemyDeath() {
+    void handleEnemyDeath() {
         if (battleState == BattleState.GAME_OVER) return;
-        if (!game.player.isAlive()) {
+        if (!game.getPlayer().isAlive()) {
             checkPlayerDeath();
             return;
         }
-        if (game.enemy.isAlive()) return; // double-call guard
+        if (game.getEnemy().isAlive()) return; // double-call guard
 
         setState(BattleState.PLAYER_TURN);
 
-        Enemy dead = game.enemy;
-        game.eventBus.publish(new EnemyDeathEvent(dead));
-        game.level++;
-        game.enemy = EnemyFactory.createEnemy(game.level);
+        Enemy dead = game.getEnemy();
+        game.getEventBus().publish(new EnemyDeathEvent(dead));
+        game.advanceLevel();
+        game.setEnemy(EnemyFactory.createEnemy(game.getLevel()));
 
         // Every 2 levels, max energy grows by 1
-        if (game.level % 2 == 0) game.maxEnergy++;
+        if (game.getLevel() % 2 == 0) game.increaseMaxEnergy(1);
 
         // Prepare shop inventory
-        game.currentShopCards = CardFactory.shopCards(game.level, game.player);
+        game.setCurrentShopCards(CardFactory.shopCards(game.getLevel(), game.getPlayer()));
         if (dead.isBoss()) {
-            game.currentBossRelics = RelicFactory.bossRelics(game.level, game.ownedRelics);
+            game.setCurrentBossRelics(
+                RelicFactory.bossRelics(game.getLevel(), game.getOwnedRelics()));
         } else {
-            game.currentBossRelics.clear();
+            game.clearCurrentBossRelics();
         }
 
         // Delegate visual/shop update to Main
@@ -325,7 +325,7 @@ public class BattleController {
      * Only executes if the player is actually dead.
      */
     private void checkPlayerDeath() {
-        if (game.player.isAlive() || battleState == BattleState.GAME_OVER) return;
+        if (game.getPlayer().isAlive() || battleState == BattleState.GAME_OVER) return;
         setState(BattleState.GAME_OVER);
         animator.playAnimation("_DIE_", UIConstants.DEATH_FRAME_COUNT, false, onPlayerDeath);
     }
@@ -339,17 +339,17 @@ public class BattleController {
      *   - Draws cards up to hand size
      *   - Clears the last event log
      */
-    private void startNewTurn() {
-        if (!game.player.isAlive()) {
+    void startNewTurn() {
+        if (!game.getPlayer().isAlive()) {
             checkPlayerDeath();
             return;
         }
         setState(BattleState.PLAYER_TURN);
-        game.player.restoreEnergy(game.maxEnergy);
-        game.eventLog.clear();
+        game.getPlayer().restoreEnergy(game.getMaxEnergy());
+        game.getEventLog().clear();
 
-        for (RelicItem relic : game.ownedRelics) {
-            relic.applyPassive(game.player, game);
+        for (RelicItem relic : game.getOwnedRelics()) {
+            relic.applyPassive(game.getPlayer(), game);
         }
 
         drawMissingHandCardsIfPlayerTurn();

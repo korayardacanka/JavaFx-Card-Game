@@ -28,7 +28,7 @@ public class Shop {
         VBox content = new VBox(12);
         content.setStyle("-fx-padding:20;");
 
-        Label goldLabel = new Label("Gold: " + game.player.getGold());
+        Label goldLabel = new Label("Gold: " + game.getPlayer().getGold());
         goldLabel.setStyle("-fx-font-size:16px; -fx-font-weight:bold;");
         content.getChildren().add(goldLabel);
 
@@ -45,7 +45,7 @@ public class Shop {
         handUpgradeButton.setOnAction(e -> {
             if (game.purchaseHandSizeUpgrade()) {
                 info.setText("Hand size increased to " + game.getHandSizeLimit() + " cards.");
-                goldLabel.setText("Gold: " + game.player.getGold());
+                goldLabel.setText("Gold: " + game.getPlayer().getGold());
                 onHandSizeChanged.run();
                 onGameStateChanged.run();
             } else {
@@ -60,9 +60,9 @@ public class Shop {
         content.getChildren().addAll(upgradeTitle, handUpgradeButton);
 
         // ── CARDS ────────────────────────────────────
-        List<Card> shopCards = game.currentShopCards.isEmpty()
-            ? CardFactory.shopCards(game.level, game.player)
-            : game.currentShopCards;
+        List<Card> shopCards = game.getCurrentShopCards().isEmpty()
+            ? CardFactory.shopCards(game.getLevel(), game.getPlayer())
+            : game.getCurrentShopCards();
 
         if (!shopCards.isEmpty()) {
             Label cardTitle = new Label("── Cards ──");
@@ -78,10 +78,10 @@ public class Shop {
                 availableShopCards.add(card);
                 shopCardButtons.add(btn);
                 btn.setOnAction(e -> {
-                    if (game.player.spendGold(card.price)) {
-                        game.player.deck.add(card);
+                    if (game.getPlayer().spendGold(card.price)) {
+                        game.getPlayer().addToDeck(card);
                         info.setText("✅ Purchased: " + card.name);
-                        goldLabel.setText("Gold: " + game.player.getGold());
+                        goldLabel.setText("Gold: " + game.getPlayer().getGold());
                         onGameStateChanged.run();
                         purchasedCardButtons.add(btn);
                         updateHandUpgradeButton(handUpgradeButton, game);
@@ -98,12 +98,12 @@ public class Shop {
         }
 
         // ── BOSS RELICS (only after defeating a boss) ─
-        if (!game.currentBossRelics.isEmpty()) {
+        if (!game.getCurrentBossRelics().isEmpty()) {
             Label sep = new Label("── Boss Rewards ──");
             sep.setStyle("-fx-font-weight:bold; -fx-text-fill:#cc7700;");
             content.getChildren().add(sep);
 
-            for (RelicItem relic : game.currentBossRelics) {
+            for (RelicItem relic : game.getCurrentBossRelics()) {
                 Button btn = new Button(
                     relic.name + "  |  " + relic.description +
                     "  |  " + relic.price + " gold"
@@ -118,12 +118,12 @@ public class Shop {
                         info.setText("❌ Requirements not met for " + relic.name + ".");
                         return;
                     }
-                    if (game.player.spendGold(relic.price)) {
-                        relic.applyOnBuy(game.player, game);
-                        game.ownedRelics.add(relic);
-                        game.eventBus.publish(new RelicEvent(relic));
+                    if (game.getPlayer().spendGold(relic.price)) {
+                        relic.applyOnBuy(game.getPlayer(), game);
+                        game.addOwnedRelic(relic);
+                        game.getEventBus().publish(new RelicEvent(relic));
                         info.setText("✨ Purchased: " + relic.name);
-                        goldLabel.setText("Gold: " + game.player.getGold());
+                        goldLabel.setText("Gold: " + game.getPlayer().getGold());
                         updateHandUpgradeButton(handUpgradeButton, game);
                         updateShopCardButtons(game, availableShopCards, shopCardButtons,
                             purchasedCardButtons);
@@ -159,14 +159,14 @@ public class Shop {
         stage.setScene(new Scene(root, 620, 620));
         stage.setMinWidth(460);
         stage.setMinHeight(360);
-        stage.setTitle("SHOP - Level " + game.level);
+        stage.setTitle("SHOP - Level " + game.getLevel());
         stage.show();
         stage.centerOnScreen();
     }
 
     private static void requestCloseWithConfirmation(Stage stage, Game game) {
         if (!hasPurchasableBossRelic(game)) {
-            game.currentBossRelics.clear();
+            game.clearCurrentBossRelics();
             stage.close();
             return;
         }
@@ -180,18 +180,18 @@ public class Shop {
 
         Optional<ButtonType> result = confirm.showAndWait();
         if (result.isPresent() && result.get() == ButtonType.OK) {
-            game.currentBossRelics.clear();
+            game.clearCurrentBossRelics();
             stage.close();
         }
     }
 
     static boolean hasPurchasableBossRelic(Game game) {
-        return game.currentBossRelics.stream().anyMatch(relic -> {
-            boolean alreadyOwned = game.ownedRelics.stream()
+        return game.getCurrentBossRelics().stream().anyMatch(relic -> {
+            boolean alreadyOwned = game.getOwnedRelics().stream()
                 .anyMatch(owned -> owned.name.equals(relic.name));
             return !alreadyOwned
                 && relic.canPurchase(game)
-                && game.player.getGold() >= relic.price;
+                && game.getPlayer().getGold() >= relic.price;
         });
     }
 
@@ -200,7 +200,7 @@ public class Shop {
         for (int i = 0; i < relics.size(); i++) {
             RelicItem relic = relics.get(i);
             Button button = buttons.get(i);
-            boolean alreadyOwned = game.ownedRelics.stream()
+            boolean alreadyOwned = game.getOwnedRelics().stream()
                 .anyMatch(owned -> owned.name.equals(relic.name));
             boolean canPurchase = relic.canPurchase(game);
             String status = alreadyOwned ? "  [Owned]"
@@ -210,7 +210,7 @@ public class Shop {
             button.setText(relic.name + "  |  " + relic.description
                 + "  |  " + relic.price + " gold" + status);
             button.setDisable(alreadyOwned || !canPurchase
-                || game.player.getGold() < relic.price);
+                || game.getPlayer().getGold() < relic.price);
         }
     }
 
@@ -228,7 +228,7 @@ public class Shop {
 
     static boolean canPurchaseHandSizeUpgrade(Game game) {
         int cost = game.getNextHandSizeUpgradeCost();
-        return cost >= 0 && game.player.getGold() >= cost;
+        return cost >= 0 && game.getPlayer().getGold() >= cost;
     }
 
     private static void updateShopCardButtons(Game game, List<Card> cards, List<Button> buttons,
@@ -236,7 +236,7 @@ public class Shop {
         for (int i = 0; i < cards.size(); i++) {
             Button button = buttons.get(i);
             button.setDisable(purchasedButtons.contains(button)
-                || game.player.getGold() < cards.get(i).price);
+                || game.getPlayer().getGold() < cards.get(i).price);
         }
     }
 

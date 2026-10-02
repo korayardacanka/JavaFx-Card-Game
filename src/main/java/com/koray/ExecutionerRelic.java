@@ -22,7 +22,7 @@ class ExecutionerRelic extends RelicItem {
             int bonus = (int)(context.baseDamage() * 0.5);
             if (bonus > 0) {
                 context.addBonus(bonus);
-                game.eventLog.append("🪓 +" + bonus + " execute");
+                game.getEventLog().append("🪓 +" + bonus + " execute");
             }
         }
     }

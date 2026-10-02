@@ -26,16 +26,13 @@ class WrathRelic extends RelicItem {
      * If the player's current HP is below half their max HP,
      * raises the current energy by bonusEnergy.
      *
-     * Note: uses restoreEnergy(current + bonus) because Player has
-     * no addEnergy() method. Consider adding one for clarity.
-     *
      * @param player the active player
      * @param game   the active game state (unused here)
      */
     @Override
     public void applyPassive(Player player, Game game) {
         if (player.getHp() < player.getMaxHp() / 2) {
-            player.restoreEnergy(player.getEnergy() + bonusEnergy);
+            player.addEnergy(bonusEnergy);
         }
     }
 }

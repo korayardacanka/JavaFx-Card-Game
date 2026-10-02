@@ -16,7 +16,7 @@ class BloodPactRelic extends RelicItem {
 
     @Override
     public boolean canPurchase(Game game) {
-        return game.player.getHp() + game.player.getShield() > 30;
+        return game.getPlayer().getHp() + game.getPlayer().getShield() > 30;
     }
 
     /**
@@ -29,12 +29,12 @@ class BloodPactRelic extends RelicItem {
     @Override
     public void applyOnBuy(Player player, Game game) {
         if (!canPurchase(game)) {
-            game.eventLog.set("❌ You need more than 30 combined HP and Shield to buy Blood Pact.");
+            game.getEventLog().set("❌ You need more than 30 combined HP and Shield to buy Blood Pact.");
             return;
         }
 
         player.takeDamage(30);
-        game.maxEnergy += 2;
-        game.eventLog.set("🩸 Blood Pact! -30 HP, +2 Max Energy");
+        game.increaseMaxEnergy(2);
+        game.getEventLog().set("🩸 Blood Pact! -30 HP, +2 Max Energy");
     }
 }

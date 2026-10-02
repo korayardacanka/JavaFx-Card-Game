@@ -35,7 +35,7 @@ class VampireRelic extends RelicItem {
         int heal = (int)(context.totalDamage() * ratio);
         if (heal > 0) {
             player.heal(heal);
-            game.eventLog.append("🧛 +" + heal + " HP");
+            game.getEventLog().append("🧛 +" + heal + " HP");
         }
     }
 }

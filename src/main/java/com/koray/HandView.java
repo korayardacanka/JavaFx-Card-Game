@@ -57,15 +57,15 @@ public class HandView {
     public void update(BattleController controller) {
         cardsBox.getChildren().clear();
         cardBoxes.clear();
-        for (Card card : game.player.hand) {
+        for (Card card : game.getPlayer().getHand()) {
             VBox cardBox = createCard(card, controller);
             cardBoxes.add(cardBox);
             cardsBox.getChildren().add(cardBox);
         }
         endTurnButton.setDisable(controller == null || !controller.canPlayerAct());
         rerollButton.setDisable(controller == null || !controller.canPlayerAct()
-            || game.player.hand.isEmpty()
-            || game.player.getGold() < BattleController.HAND_REROLL_COST);
+            || game.getPlayer().getHand().isEmpty()
+            || game.getPlayer().getGold() < BattleController.HAND_REROLL_COST);
     }
 
     public void setLog(String message) {
@@ -74,13 +74,13 @@ public class HandView {
 
     public void playCardAt(int index, BattleController controller) {
         if (controller == null || !controller.canPlayerAct()
-                || index < 0 || index >= game.player.hand.size()
+                || index < 0 || index >= game.getPlayer().getHand().size()
                 || index >= cardBoxes.size()) {
             return;
         }
 
-        Card card = game.player.hand.get(index);
-        if (game.player.getEnergy() < card.cost) return;
+        Card card = game.getPlayer().getHand().get(index);
+        if (game.getPlayer().getEnergy() < card.cost) return;
         playCard(card, cardBoxes.get(index), controller);
     }
 
@@ -107,7 +107,7 @@ public class HandView {
         Label cost = new Label("Cost: " + card.cost);
         Button play = new Button("Play");
         play.setDisable(controller == null || controller.isTurnLocked()
-            || game.player.getEnergy() < card.cost);
+            || game.getPlayer().getEnergy() < card.cost);
         play.setOnAction(event -> playCard(card, box, controller));
         box.getChildren().addAll(name, effectDescription, cost, play);
         return box;
@@ -115,7 +115,7 @@ public class HandView {
 
     private void playCard(Card card, VBox box, BattleController controller) {
         if (controller != null && controller.canPlayerAct()
-                && game.player.getEnergy() >= card.cost) {
+                && game.getPlayer().getEnergy() >= card.cost) {
             controller.handleCardPlay(card, box);
         }
     }

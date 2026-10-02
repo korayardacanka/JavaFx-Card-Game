@@ -64,78 +64,78 @@ public final class HeadlessSimulator {
     private static int playGame(long seed) {
         Random random = new Random(seed);
         Game game = new Game();
-        game.eventBus = new EventBus();
-        game.eventBus.subscribe(new RewardSystem(game));
-        game.enemy = EnemyFactory.createEnemy(game.level);
+        game.setEventBus(new EventBus());
+        game.getEventBus().subscribe(new RewardSystem(game));
+        game.setEnemy(EnemyFactory.createEnemy(game.getLevel()));
 
         DeckManager deckManager = new DeckManager(game, random);
         deckManager.resetPlayerDeck();
         deckManager.drawHand();
 
         int turnsAtLevel = 0;
-        while (game.player.isAlive()) {
-            if (game.level > MAX_LEVEL || turnsAtLevel > MAX_TURNS_PER_ENEMY) {
+        while (game.getPlayer().isAlive()) {
+            if (game.getLevel() > MAX_LEVEL || turnsAtLevel > MAX_TURNS_PER_ENEMY) {
                 throw new IllegalStateException(
-                    "Simulation exceeded safety limit at level " + game.level + ".");
+                    "Simulation exceeded safety limit at level " + game.getLevel() + ".");
             }
 
             applyTurnStart(game, deckManager);
 
-            while (game.player.isAlive()) {
+            while (game.getPlayer().isAlive()) {
                 Card card = chooseCard(game);
                 if (card == null) {
                     break;
                 }
                 playCard(game, card);
-                if (!game.enemy.isAlive()) {
+                if (!game.getEnemy().isAlive()) {
                     resolveEnemyDeath(game, random);
                     turnsAtLevel = 0;
                 }
             }
 
-            if (!game.player.isAlive()) {
+            if (!game.getPlayer().isAlive()) {
                 break;
             }
 
-            game.enemy.processStatusEffects();
-            if (!game.enemy.isAlive()) {
+            game.getEnemy().processStatusEffects();
+            if (!game.getEnemy().isAlive()) {
                 resolveEnemyDeath(game, random);
                 turnsAtLevel = 0;
                 continue;
             }
 
-            int hpBeforeAttack = game.player.getHp();
-            game.enemy.attack(game.player);
-            int hpDamage = hpBeforeAttack - game.player.getHp();
+            int hpBeforeAttack = game.getPlayer().getHp();
+            game.getEnemy().attack(game.getPlayer());
+            int hpDamage = hpBeforeAttack - game.getPlayer().getHp();
             if (hpDamage > 0) {
-                for (RelicItem relic : game.ownedRelics) {
-                    relic.onDamageTaken(game.player, game.enemy, game, hpDamage);
+                for (RelicItem relic : game.getOwnedRelics()) {
+                    relic.onDamageTaken(game.getPlayer(), game.getEnemy(), game, hpDamage);
                 }
             }
 
-            if (!game.player.isAlive()) {
+            if (!game.getPlayer().isAlive()) {
                 break;
             }
-            if (!game.enemy.isAlive()) {
+            if (!game.getEnemy().isAlive()) {
                 resolveEnemyDeath(game, random);
                 turnsAtLevel = 0;
             }
 
-            int cardsToDraw = game.getHandSizeLimit() - game.player.hand.size();
+            int cardsToDraw = game.getHandSizeLimit() - game.getPlayer().getHand().size();
             for (int i = 0; i < cardsToDraw; i++) {
                 deckManager.drawSingleCard();
             }
             turnsAtLevel++;
         }
-        return game.level;
+        return game.getLevel();
     }
 
     private static void applyTurnStart(Game game, DeckManager deckManager) {
-        game.player.restoreEnergy(game.maxEnergy);
-        for (RelicItem relic : game.ownedRelics) {
-            relic.applyPassive(game.player, game);
+        game.getPlayer().restoreEnergy(game.getMaxEnergy());
+        for (RelicItem relic : game.getOwnedRelics()) {
+            relic.applyPassive(game.getPlayer(), game);
         }
-        int cardsToDraw = game.getHandSizeLimit() - game.player.hand.size();
+        int cardsToDraw = game.getHandSizeLimit() - game.getPlayer().getHand().size();
         for (int i = 0; i < cardsToDraw; i++) {
             deckManager.drawSingleCard();
         }
@@ -144,8 +144,8 @@ public final class HeadlessSimulator {
     private static Card chooseCard(Game game) {
         Card best = null;
         int bestScore = Integer.MIN_VALUE;
-        for (Card card : game.player.hand) {
-            if (card.cost > game.player.getEnergy()) {
+        for (Card card : game.getPlayer().getHand()) {
+            if (card.cost > game.getPlayer().getEnergy()) {
                 continue;
             }
             int score = scoreCard(card, game);
@@ -161,19 +161,19 @@ public final class HeadlessSimulator {
         CardEffect effect = card.effect;
         int score;
         if (effect instanceof DamageEffect damage) {
-            score = damage.damage >= game.enemy.getHp() ? 1_000 : 100 + damage.damage;
+            score = damage.damage >= game.getEnemy().getHp() ? 1_000 : 100 + damage.damage;
         } else if (effect instanceof HealEffect heal) {
-            int missingHp = game.player.getMaxHp() - game.player.getHp();
+            int missingHp = game.getPlayer().getMaxHp() - game.getPlayer().getHp();
             score = missingHp == 0 ? -1_000 : 55 + Math.min(missingHp, heal.heal);
         } else if (effect instanceof ShieldEffect shield) {
-            int unblockedAttack = Math.max(0, game.enemy.getAttackDamage() - game.player.getShield());
+            int unblockedAttack = Math.max(0, game.getEnemy().getAttackDamage() - game.getPlayer().getShield());
             score = unblockedAttack == 0 ? 10 : 50 + Math.min(unblockedAttack, shield.shield);
         } else if (effect instanceof PoisonEffect) {
-            score = game.enemy.getPoisonStacks() == 0 && game.enemy.getHp() > 30 ? 85 : 15;
+            score = game.getEnemy().getPoisonStacks() == 0 && game.getEnemy().getHp() > 30 ? 85 : 15;
         } else if (effect instanceof BurnEffect) {
-            score = game.enemy.getHp() > 50 ? 60 : 20;
+            score = game.getEnemy().getHp() > 50 ? 60 : 20;
         } else if (effect instanceof FreezeEffect) {
-            score = game.enemy.isFrozen() ? 10 : 65 + game.enemy.getAttackDamage() / 2;
+            score = game.getEnemy().isFrozen() ? 10 : 65 + game.getEnemy().getAttackDamage() / 2;
         } else {
             score = 0;
         }
@@ -181,47 +181,47 @@ public final class HeadlessSimulator {
     }
 
     private static void playCard(Game game, Card card) {
-        if (!game.player.spendEnergy(card.cost)) {
+        if (!game.getPlayer().spendEnergy(card.cost)) {
             throw new IllegalStateException("Policy selected a card the player cannot afford.");
         }
 
-        int enemyHpBefore = game.enemy.getHp();
-        card.use(game.player, game.enemy);
-        game.player.hand.remove(card);
-        game.player.discard.add(card);
+        int enemyHpBefore = game.getEnemy().getHp();
+        card.use(game.getPlayer(), game.getEnemy());
+        game.getPlayer().moveHandCardToDiscard(card);
 
-        int dealtDamage = enemyHpBefore - game.enemy.getHp();
+        int dealtDamage = enemyHpBefore - game.getEnemy().getHp();
         if (dealtDamage > 0) {
             DamagePipeline.resolve(game, dealtDamage);
         }
     }
 
     private static void resolveEnemyDeath(Game game, Random random) {
-        Enemy defeated = game.enemy;
-        game.eventBus.publish(new EnemyDeathEvent(defeated));
-        game.level++;
-        game.enemy = EnemyFactory.createEnemy(game.level);
-        if (game.level % 2 == 0) {
-            game.maxEnergy++;
+        Enemy defeated = game.getEnemy();
+        game.getEventBus().publish(new EnemyDeathEvent(defeated));
+        game.advanceLevel();
+        game.setEnemy(EnemyFactory.createEnemy(game.getLevel()));
+        if (game.getLevel() % 2 == 0) {
+            game.increaseMaxEnergy(1);
         }
 
-        game.currentShopCards = CardFactory.shopCards(game.level, game.player, random);
-        game.currentBossRelics = defeated.isBoss()
-            ? RelicFactory.bossRelics(game.level, game.ownedRelics, random)
-            : new ArrayList<>();
+        game.setCurrentShopCards(
+            CardFactory.shopCards(game.getLevel(), game.getPlayer(), random));
+        game.setCurrentBossRelics(defeated.isBoss()
+            ? RelicFactory.bossRelics(game.getLevel(), game.getOwnedRelics(), random)
+            : new ArrayList<>());
         applyShopPolicy(game);
     }
 
     private static void applyShopPolicy(Game game) {
         int upgradeCost = game.getNextHandSizeUpgradeCost();
-        if (upgradeCost >= 0 && game.player.getGold() >= upgradeCost) {
+        if (upgradeCost >= 0 && game.getPlayer().getGold() >= upgradeCost) {
             game.purchaseHandSizeUpgrade();
         }
 
         Card bestCard = null;
         int bestCardScore = Integer.MIN_VALUE;
-        for (Card card : game.currentShopCards) {
-            if (card.price <= game.player.getGold()) {
+        for (Card card : game.getCurrentShopCards()) {
+            if (card.price <= game.getPlayer().getGold()) {
                 int score = cardScoreForPurchase(card) - card.price / 10;
                 if (score > bestCardScore) {
                     bestCard = card;
@@ -230,14 +230,14 @@ public final class HeadlessSimulator {
             }
         }
         if (bestCard != null) {
-            game.player.spendGold(bestCard.price);
-            game.player.deck.add(bestCard);
+            game.getPlayer().spendGold(bestCard.price);
+            game.getPlayer().addToDeck(bestCard);
         }
 
         RelicItem bestRelic = null;
         int bestRelicScore = Integer.MIN_VALUE;
-        for (RelicItem relic : game.currentBossRelics) {
-            if (relic.price > game.player.getGold() || !relic.canPurchase(game)) {
+        for (RelicItem relic : game.getCurrentBossRelics()) {
+            if (relic.price > game.getPlayer().getGold() || !relic.canPurchase(game)) {
                 continue;
             }
             int score = relicScore(relic, game);
@@ -247,9 +247,9 @@ public final class HeadlessSimulator {
             }
         }
         if (bestRelic != null && bestRelicScore > 0 && bestRelic.canPurchase(game)
-                && game.player.spendGold(bestRelic.price)) {
-            bestRelic.applyOnBuy(game.player, game);
-            game.ownedRelics.add(bestRelic);
+                && game.getPlayer().spendGold(bestRelic.price)) {
+            bestRelic.applyOnBuy(game.getPlayer(), game);
+            game.addOwnedRelic(bestRelic);
         }
     }
 
@@ -267,7 +267,7 @@ public final class HeadlessSimulator {
         if (relic instanceof PassiveHealRelic) return 100;
         if (relic instanceof VampireRelic) return 90;
         if (relic instanceof PassiveShieldRelic) return 80;
-        if (relic instanceof MaxHpRelic) return game.player.getHp() < game.player.getMaxHp() ? 85 : 70;
+        if (relic instanceof MaxHpRelic) return game.getPlayer().getHp() < game.getPlayer().getMaxHp() ? 85 : 70;
         if (relic instanceof ThornRelic) return 65;
         if (relic instanceof ExecutionerRelic) return 60;
         if (relic instanceof WrathRelic) return 50;

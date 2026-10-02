@@ -90,14 +90,14 @@ public class Main extends Application {
     private void initializeGame() {
         // Clear old bus subscribers so the previous game graph can be collected
         // without the Main reference held by UIObserver remaining reachable.
-        if (game != null && game.eventBus != null) {
-            game.eventBus.clearObservers();
+        if (game != null && game.getEventBus() != null) {
+            game.getEventBus().clearObservers();
         }
 
         game = new Game();
-        game.eventBus = new EventBus();
-        game.eventBus.subscribe(new RewardSystem(game));
-        game.eventBus.subscribe(new UIObserver(game, this));
+        game.setEventBus(new EventBus());
+        game.getEventBus().subscribe(new RewardSystem(game));
+        game.getEventBus().subscribe(new UIObserver(game, this));
 
         deckManager = new DeckManager(game);
 
@@ -192,7 +192,7 @@ public class Main extends Application {
      *
      * Guard conditions:
      *   - battleController != null : may not be set on the start screen
-     *   - game.player.isAlive()    : ignore E on the death screen to prevent
+     *   - game.getPlayer().isAlive()    : ignore E on the death screen to prevent
      *                                invalid background state mutations
      */
     private void setScene(Pane root) {
@@ -223,8 +223,8 @@ public class Main extends Application {
      */
     public void updateUI() {
         hudView.update(game);
-        if (!game.eventLog.isEmpty()) {
-            handView.setLog(game.eventLog.toDisplayString());
+        if (!game.getEventLog().isEmpty()) {
+            handView.setLog(game.getEventLog().toDisplayString());
         }
         handView.update(battleController);
     }
@@ -232,12 +232,12 @@ public class Main extends Application {
     /** Applies the EnemyDesign decorator and updates the enemy container style. */
     private void updateEnemyVisuals() {
         EnemyDesign design = new BaseEnemyDesign();
-        if (game.enemy.isBoss()) {
-            design = new BossBorderDecorator(design, game.level);
+        if (game.getEnemy().isBoss()) {
+            design = new BossBorderDecorator(design, game.getLevel());
         }
         enemyVoid.setStyle("-fx-background-color: rgba(8, 8, 12, 0.82); "
             + "-fx-background-radius: 50%; " + design.getBorderStyle() + design.getEffect());
-        enemyVoid.getChildren().setAll(EnemyPortraitFactory.create(game.enemy));
+        enemyVoid.getChildren().setAll(EnemyPortraitFactory.create(game.getEnemy()));
         if (enemyAnimator != null) enemyAnimator.playIdle();
     }
     /** Updates background, enemy visuals, refreshes the UI, and opens the shop. */
@@ -253,7 +253,7 @@ public class Main extends Application {
 
     /** Loads the correct biome background, cross-fading when it changes. */
     private void updateBackground() {
-        int biome = GameRules.tierForLevel(game.level) % 4 + 1;
+        int biome = GameRules.tierForLevel(game.getLevel()) % 4 + 1;
         if (biome == currentBiome && background.getImage() != null) return;
         currentBiome = biome;
 

@@ -1,6 +1,9 @@
 package com.koray;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Random;
 
 /**
  * Represents the player character.
@@ -11,9 +14,8 @@ import java.util.*;
  *   - Energy : spent when playing cards; restored at turn start
  *   - Gold   : spent in the shop; earned from enemy kills
  *
- * Also owns the three card piles (deck, hand, discard) used for
- * deck-building gameplay. These are package-private so CardFactory
- * and Main can manage them directly.
+ * Also owns the three card piles used for deck-building gameplay. Their
+ * public views are read-only; mutation goes through purpose-specific methods.
  */
 public class Player {
 
@@ -23,10 +25,9 @@ public class Player {
     private int energy = 3;
     private int maxhp  = 100;
 
-    // Card piles — accessible within the package (CardFactory, Shop, Main)
-    List<Card> deck    = new ArrayList<>();
-    List<Card> hand    = new ArrayList<>();
-    List<Card> discard = new ArrayList<>();
+    private final List<Card> deck    = new ArrayList<>();
+    private final List<Card> hand    = new ArrayList<>();
+    private final List<Card> discard = new ArrayList<>();
 
     // ── Getters ───────────────────────────────────────────────────────────
     public int     getHp()     { return hp; }
@@ -34,6 +35,9 @@ public class Player {
     public int     getGold()   { return gold; }
     public int     getEnergy() { return energy; }
     public int     getMaxHp()  { return maxhp; }
+    public List<Card> getDeck() { return Collections.unmodifiableList(deck); }
+    public List<Card> getHand() { return Collections.unmodifiableList(hand); }
+    public List<Card> getDiscard() { return Collections.unmodifiableList(discard); }
 
     /** Returns true while the player has at least 1 HP. */
     public boolean isAlive()   { return hp > 0; }
@@ -120,6 +124,10 @@ public class Player {
         energy = amount;
     }
 
+    public void addEnergy(int amount) {
+        if (amount > 0) energy += amount;
+    }
+
     // ── Gold ──────────────────────────────────────────────────────────────
 
     /**
@@ -142,6 +150,45 @@ public class Player {
     public boolean spendGold(int amount) {
         if (gold < amount) return false;
         gold -= amount;
+        return true;
+    }
+
+    public void addToDeck(Card card) { deck.add(card); }
+    public void addToHand(Card card) { hand.add(card); }
+    public void addToDiscard(Card card) { discard.add(card); }
+    public void moveHandToDiscard(List<Card> cards) { discard.addAll(cards); }
+    public boolean removeFromHand(Card card) { return hand.remove(card); }
+
+    public void moveHandCardToDiscard(Card card) {
+        if (hand.remove(card)) discard.add(card);
+    }
+
+    public void moveHandToDiscard() {
+        discard.addAll(hand);
+        hand.clear();
+    }
+
+    public void clearCardPiles() {
+        deck.clear();
+        hand.clear();
+        discard.clear();
+    }
+
+    public void clearHand() { hand.clear(); }
+
+    public void resetDeck(List<Card> cards) {
+        deck.clear();
+        deck.addAll(cards);
+    }
+
+    public boolean drawCard(Random random) {
+        if (deck.isEmpty() && !discard.isEmpty()) {
+            deck.addAll(discard);
+            discard.clear();
+            Collections.shuffle(deck, random);
+        }
+        if (deck.isEmpty()) return false;
+        hand.add(deck.remove(0));
         return true;
     }
 }
