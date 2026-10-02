@@ -159,26 +159,6 @@ public class Player {
     public void moveHandToDiscard(List<Card> cards) { discard.addAll(cards); }
     public boolean removeFromHand(Card card) { return hand.remove(card); }
 
-    public int getTotalCardCount() {
-        return deck.size() + hand.size() + discard.size();
-    }
-
-    public int countCardCopies(String name) {
-        int count = 0;
-        for (Card card : deck) if (card.name.equals(name)) count++;
-        for (Card card : hand) if (card.name.equals(name)) count++;
-        for (Card card : discard) if (card.name.equals(name)) count++;
-        return count;
-    }
-
-    public int removeCardFromPiles(Card card) {
-        int removed = 0;
-        if (deck.remove(card)) removed++;
-        if (hand.remove(card)) removed++;
-        if (discard.remove(card)) removed++;
-        return removed;
-    }
-
     public void moveHandCardToDiscard(Card card) {
         if (hand.remove(card)) discard.add(card);
     }

@@ -2,9 +2,6 @@ package com.koray;
 
 import org.junit.Test;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -104,70 +101,4 @@ public class ShopTest {
         assertEquals(5, game.getPlayer().getHand().size());
     }
 
-    @Test
-    public void cardRemovalCostIncreasesAndOnlyOneCardCanBeRemovedPerShopVisit() {
-        Game game = gameWithCards(7);
-        game.beginShopVisit();
-        Card first = game.getPlayer().getDeck().get(0);
-
-        assertEquals(50, game.getCardRemovalCost());
-        assertTrue(game.canRemoveCard());
-        assertTrue(game.removeCardFromRun(first));
-        assertEquals(0, game.getPlayer().getGold());
-        assertEquals(1, game.getCardRemovalCount());
-        assertEquals(75, game.getCardRemovalCost());
-        assertFalse(game.canRemoveCard());
-
-        game.beginShopVisit();
-        game.getPlayer().addGold(75);
-        assertTrue(game.canRemoveCard());
-        assertTrue(game.removeCardFromRun(game.getPlayer().getDeck().get(0)));
-        assertEquals(2, game.getCardRemovalCount());
-        assertEquals(100, game.getCardRemovalCost());
-        assertEquals(0, game.getPlayer().getGold());
-    }
-
-    @Test
-    public void cardRemovalCannotReduceTheCombinedPilesBelowFiveCards() {
-        Game game = gameWithCards(6);
-        game.beginShopVisit();
-
-        assertTrue(game.removeCardFromRun(game.getPlayer().getDeck().get(0)));
-        assertEquals(5, game.getPlayer().getTotalCardCount());
-
-        game.beginShopVisit();
-        game.getPlayer().addGold(100);
-        assertFalse(game.canRemoveCard());
-        assertFalse(game.removeCardFromRun(game.getPlayer().getDeck().get(0)));
-        assertEquals(5, game.getPlayer().getTotalCardCount());
-        assertEquals(1, game.getCardRemovalCount());
-    }
-
-    @Test
-    public void removingCardRemovesItsReferenceFromEveryPile() {
-        Game game = gameWithCards(6);
-        Card selected = game.getPlayer().getDeck().get(0);
-        game.getPlayer().addToHand(selected);
-        game.getPlayer().addToDiscard(selected);
-        game.beginShopVisit();
-        int countBefore = game.getPlayer().getTotalCardCount();
-
-        assertTrue(game.removeCardFromRun(selected));
-
-        assertFalse(game.getPlayer().getDeck().contains(selected));
-        assertFalse(game.getPlayer().getHand().contains(selected));
-        assertFalse(game.getPlayer().getDiscard().contains(selected));
-        assertEquals(countBefore - 3, game.getPlayer().getTotalCardCount());
-        assertEquals(0, game.getPlayer().getGold());
-    }
-
-    private static Game gameWithCards(int count) {
-        Game game = new Game();
-        List<Card> cards = new ArrayList<>();
-        for (int i = 0; i < count; i++) {
-            cards.add(CardFactory.make("Test " + i, 1, 1, 1, new DamageEffect(1)));
-        }
-        game.getPlayer().resetDeck(cards);
-        return game;
-    }
 }

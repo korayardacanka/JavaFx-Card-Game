@@ -19,8 +19,6 @@ public class Shop {
         if (currentStage != null && currentStage.isShowing()) {
             currentStage.close();
         }
-        game.beginShopVisit();
-
         Stage stage = new Stage();
         stage.initOwner(owner);
         stage.initModality(Modality.WINDOW_MODAL);
@@ -59,46 +57,6 @@ public class Shop {
         Label upgradeTitle = new Label("── Permanent Upgrade ──");
         upgradeTitle.setStyle("-fx-font-weight:bold;");
         content.getChildren().addAll(upgradeTitle, handUpgradeButton);
-
-        Button removeCardButton = new Button();
-        removeCardButton.setMaxWidth(Double.MAX_VALUE);
-        updateCardRemovalButton(removeCardButton, game);
-        removeCardButton.setOnAction(e -> {
-            List<Card> removableCards = new ArrayList<>();
-            List<String> choices = new ArrayList<>();
-            addRemovalChoices(game.getPlayer().getDeck(), "Deck", removableCards, choices);
-            addRemovalChoices(game.getPlayer().getHand(), "Hand", removableCards, choices);
-            addRemovalChoices(game.getPlayer().getDiscard(), "Discard", removableCards, choices);
-            if (choices.isEmpty()) {
-                info.setText("❌ No cards can be removed.");
-                return;
-            }
-
-            ChoiceDialog<String> dialog = new ChoiceDialog<>(choices.get(0), choices);
-            dialog.initOwner(stage);
-            dialog.setTitle("Remove a card");
-            dialog.setHeaderText("Choose a card to remove for "
-                + game.getCardRemovalCost() + " gold.");
-            dialog.setContentText("Card:");
-            Optional<String> choice = dialog.showAndWait();
-            if (choice.isEmpty()) return;
-
-            int selectedIndex = choices.indexOf(choice.get());
-            if (selectedIndex >= 0 && game.removeCardFromRun(removableCards.get(selectedIndex))) {
-                info.setText("✅ Removed: " + removableCards.get(selectedIndex).name);
-                goldLabel.setText("Gold: " + game.getPlayer().getGold());
-                onGameStateChanged.run();
-                updateCardRemovalButton(removeCardButton, game);
-                updateHandUpgradeButton(handUpgradeButton, game);
-                updateShopCardButtons(game, availableShopCards, shopCardButtons,
-                    purchasedCardButtons);
-                updateBossRelicButtons(game, availableBossRelics, bossRelicButtons);
-            } else {
-                info.setText("❌ The card could not be removed.");
-                updateCardRemovalButton(removeCardButton, game);
-            }
-        });
-        content.getChildren().addAll(new Label("── Card Removal ──"), removeCardButton);
 
         // ── CARDS ────────────────────────────────────
         List<Card> shopCards = game.getCurrentShopCards().isEmpty()
@@ -266,21 +224,6 @@ public class Shop {
         button.setText("Hand Size Lv. " + (game.getHandSizeUpgradeLevel() + 1)
             + " (+1 card) | " + cost + " gold");
         button.setDisable(!canPurchaseHandSizeUpgrade(game));
-    }
-
-    private static void updateCardRemovalButton(Button button, Game game) {
-        button.setText("Remove a card | " + game.getCardRemovalCost() + " gold"
-            + (game.getPlayer().getTotalCardCount() <= 5 ? " (minimum deck: 5)" : ""));
-        button.setDisable(!game.canRemoveCard());
-    }
-
-    private static void addRemovalChoices(List<Card> cards, String pileName,
-                                         List<Card> removableCards, List<String> choices) {
-        for (int i = 0; i < cards.size(); i++) {
-            Card card = cards.get(i);
-            removableCards.add(card);
-            choices.add(card.name + " - " + pileName + " " + (i + 1));
-        }
     }
 
     static boolean canPurchaseHandSizeUpgrade(Game game) {

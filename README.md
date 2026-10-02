@@ -18,8 +18,6 @@ Gameplay backgrounds and combat visuals change as you progress through the enemy
 - Six card effects: damage, healing, shield, poison, burn, and freeze.
 - A tiered card pool and a shop between battles.
 - Up to two copies of each card across the deck, hand, and discard piles.
-- A shop card-removal service starting at 50 gold, increasing by 25 gold each
-  time, limited to one removal per shop and a minimum five-card deck.
 - Relics that grant passive, defensive, and damage-triggered bonuses.
 - Reroll your current hand for 10 gold.
 - Permanently increase your hand size in the shop: three upgrades add one card
