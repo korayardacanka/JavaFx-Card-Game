@@ -80,9 +80,24 @@ in the test source set and delegates combat rules to `CombatEngine`.
 ```text
 src/
 ├── main/
-│   ├── java/com/koray/       # Game logic, JavaFX views, and design-pattern implementations
+│   ├── java/com/koray/
+│   │   ├── cards/            # Cards, effects, and card factory
+│   │   ├── combat/           # Combat engine and JavaFX battle adapter
+│   │   ├── core/             # Game state, player, deck, and rules
+│   │   ├── enemies/          # Enemy models, factories, and presentation
+│   │   ├── events/           # Game events and observer infrastructure
+│   │   ├── relics/           # Relic definitions and factory
+│   │   └── ui/               # Screens, views, animation, and application entry point
 │   └── resources/assets/     # Sprite frames and biome backgrounds
-└── test/java/com/koray/      # JUnit tests
+└── test/
+    └── java/com/koray/      # JUnit tests grouped by the packages they cover
+        ├── cards/
+        ├── combat/
+        ├── core/
+        ├── enemies/
+        ├── relics/
+        ├── simulation/
+        └── ui/
 ```
 
 ## Controls

@@ -46,7 +46,7 @@
         <artifactId>javafx-maven-plugin</artifactId>
         <version>0.0.8</version>
         <configuration>
-          <mainClass>com.koray.Main</mainClass>
+          <mainClass>com.koray.ui.Main</mainClass>
         </configuration>
       </plugin>
       <plugin>
@@ -54,7 +54,7 @@
         <artifactId>exec-maven-plugin</artifactId>
         <version>3.5.0</version>
         <configuration>
-          <mainClass>com.koray.HeadlessSimulator</mainClass>
+          <mainClass>com.koray.simulation.HeadlessSimulator</mainClass>
           <classpathScope>test</classpathScope>
         </configuration>
       </plugin>

@@ -1,0 +1,38 @@
+package com.koray.relics;
+
+import com.koray.core.Game;
+import com.koray.core.Player;
+
+/**
+ * 💰 Gold Pouch relic.
+ * Grants a fixed amount of gold at the start of every turn.
+ * Scales with tier: base 3 gold + 1 per tier at the time of purchase.
+ */
+public class GoldRushRelic extends RelicItem {
+
+    /** Gold amount awarded each turn. */
+    private int goldPerTurn;
+
+    /**
+     * @param goldPerTurn gold to award at the start of each player turn
+     */
+    public GoldRushRelic(int goldPerTurn) {
+        super("💰 Gold Pouch",
+              "Gain +" + goldPerTurn + " gold at the start of each turn",
+              45);
+        this.goldPerTurn = goldPerTurn;
+    }
+
+    /**
+     * Called at the start of every player turn.
+     * Adds the configured gold amount to the player's wallet.
+     *
+     * @param player the active player
+     * @param game   the active game state
+     */
+    @Override
+    public void applyPassive(Player player, Game game) {
+        player.addGold(goldPerTurn);
+    }
+}
+

@@ -1,0 +1,254 @@
+package com.koray.simulation;
+
+import com.koray.cards.BurnEffect;
+import com.koray.cards.Card;
+import com.koray.cards.CardEffect;
+import com.koray.cards.DamageEffect;
+import com.koray.cards.FreezeEffect;
+import com.koray.cards.HealEffect;
+import com.koray.cards.PoisonEffect;
+import com.koray.cards.ShieldEffect;
+import com.koray.combat.CombatEngine;
+import com.koray.combat.CombatListener;
+import com.koray.core.DeckManager;
+import com.koray.core.Game;
+import com.koray.core.RewardSystem;
+import com.koray.enemies.EnemyFactory;
+import com.koray.events.EventBus;
+import com.koray.relics.ExecutionerRelic;
+import com.koray.relics.GoldRushRelic;
+import com.koray.relics.MaxHpRelic;
+import com.koray.relics.PassiveHealRelic;
+import com.koray.relics.PassiveShieldRelic;
+import com.koray.relics.RelicItem;
+import com.koray.relics.ThornRelic;
+import com.koray.relics.VampireRelic;
+import com.koray.relics.WrathRelic;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Random;
+import java.util.SortedMap;
+import java.util.TreeMap;
+
+/**
+ * Runs full games without starting JavaFX and reports conditional death rates
+ * by level. The default policy favors direct damage, uses defensive cards when
+ * helpful, and buys one affordable card and boss relic after each victory.
+ */
+public final class HeadlessSimulator {
+
+    private static final int DEFAULT_GAME_COUNT = 1_000;
+    private static final long DEFAULT_SEED = 42L;
+    private static final int MAX_TURNS_PER_ENEMY = 10_000;
+    private static final int MAX_LEVEL = 10_000;
+
+    private HeadlessSimulator() {}
+
+    public static void main(String[] args) {
+        if (args.length > 2) {
+            throw new IllegalArgumentException("Usage: mvn exec:java [-Dexec.args=\"<games> [seed]\"]");
+        }
+
+        int gameCount = args.length > 0 ? Integer.parseInt(args[0]) : DEFAULT_GAME_COUNT;
+        long seed = args.length > 1 ? Long.parseLong(args[1]) : DEFAULT_SEED;
+        if (gameCount <= 0) {
+            throw new IllegalArgumentException("Game count must be greater than zero.");
+        }
+
+        Result result = simulate(gameCount, seed);
+        printResult(result);
+    }
+
+    public static Result simulate(int gameCount, long seed) {
+        if (gameCount <= 0) {
+            throw new IllegalArgumentException("Game count must be greater than zero.");
+        }
+
+        SortedMap<Integer, MutableLevelStats> totals = new TreeMap<>();
+        int highestLevel = 1;
+
+        for (int index = 0; index < gameCount; index++) {
+            int deathLevel = playGame(seed + index);
+            highestLevel = Math.max(highestLevel, deathLevel);
+            for (int level = 1; level <= deathLevel; level++) {
+                totals.computeIfAbsent(level, ignored -> new MutableLevelStats()).entrants++;
+            }
+            totals.get(deathLevel).deaths++;
+        }
+
+        SortedMap<Integer, LevelStats> levels = new TreeMap<>();
+        for (Map.Entry<Integer, MutableLevelStats> entry : totals.entrySet()) {
+            MutableLevelStats stats = entry.getValue();
+            levels.put(entry.getKey(), new LevelStats(stats.entrants, stats.deaths));
+        }
+        return new Result(gameCount, seed, levels, highestLevel);
+    }
+
+    private static int playGame(long seed) {
+        Random random = new Random(seed);
+        Game game = new Game();
+        game.setEventBus(new EventBus());
+        game.getEventBus().subscribe(new RewardSystem(game));
+        game.setEnemy(EnemyFactory.createEnemy(game.getLevel()));
+
+        DeckManager deckManager = new DeckManager(game, random);
+        deckManager.resetPlayerDeck();
+        int[] turnsAtLevel = {0};
+        CombatEngine engine = new CombatEngine(game, deckManager, new CombatListener() {
+            @Override
+            public void onEnemyDefeated() {
+                applyShopPolicy(game);
+                turnsAtLevel[0] = 0;
+            }
+        }, random);
+        engine.startNewTurn();
+
+        while (game.getPlayer().isAlive()) {
+            if (game.getLevel() > MAX_LEVEL || turnsAtLevel[0] > MAX_TURNS_PER_ENEMY) {
+                throw new IllegalStateException(
+                    "Simulation exceeded safety limit at level " + game.getLevel() + ".");
+            }
+
+            playAvailableCards(game, engine);
+            if (!game.getPlayer().isAlive()) break;
+
+            turnsAtLevel[0]++;
+            engine.endTurn();
+        }
+        return game.getLevel();
+    }
+
+    static void playAvailableCards(Game game, CombatEngine engine) {
+        while (engine.canPlayerAct()) {
+            Card card = chooseCard(game);
+            if (card == null) return;
+            engine.playCard(card);
+        }
+    }
+
+    private static Card chooseCard(Game game) {
+        Card best = null;
+        int bestScore = Integer.MIN_VALUE;
+        for (Card card : game.getPlayer().getHand()) {
+            if (card.getCost() > game.getPlayer().getEnergy()) {
+                continue;
+            }
+            int score = scoreCard(card, game);
+            if (score > bestScore) {
+                best = card;
+                bestScore = score;
+            }
+        }
+        return best;
+    }
+
+    private static int scoreCard(Card card, Game game) {
+        CardEffect effect = card.getEffect();
+        int score;
+        if (effect instanceof DamageEffect damage) {
+            score = damage.getDamage() >= game.getEnemy().getHp() ? 1_000 : 100 + damage.getDamage();
+        } else if (effect instanceof HealEffect heal) {
+            int missingHp = game.getPlayer().getMaxHp() - game.getPlayer().getHp();
+            score = missingHp == 0 ? -1_000 : 55 + Math.min(missingHp, heal.getHeal());
+        } else if (effect instanceof ShieldEffect shield) {
+            int unblockedAttack = Math.max(0, game.getEnemy().getAttackDamage() - game.getPlayer().getShield());
+            score = unblockedAttack == 0 ? 10 : 50 + Math.min(unblockedAttack, shield.getShield());
+        } else if (effect instanceof PoisonEffect) {
+            score = game.getEnemy().getPoisonStacks() == 0 && game.getEnemy().getHp() > 30 ? 85 : 15;
+        } else if (effect instanceof BurnEffect) {
+            score = game.getEnemy().getHp() > 50 ? 60 : 20;
+        } else if (effect instanceof FreezeEffect) {
+            score = game.getEnemy().isFrozen() ? 10 : 65 + game.getEnemy().getAttackDamage() / 2;
+        } else {
+            score = 0;
+        }
+        return score - card.getCost();
+    }
+
+    private static void applyShopPolicy(Game game) {
+        int upgradeCost = game.getNextHandSizeUpgradeCost();
+        if (upgradeCost >= 0 && game.getPlayer().getGold() >= upgradeCost) {
+            game.purchaseHandSizeUpgrade();
+        }
+
+        Card bestCard = null;
+        int bestCardScore = Integer.MIN_VALUE;
+        for (Card card : game.getCurrentShopCards()) {
+            if (card.getPrice() <= game.getPlayer().getGold()) {
+                int score = cardScoreForPurchase(card) - card.getPrice() / 10;
+                if (score > bestCardScore) {
+                    bestCard = card;
+                    bestCardScore = score;
+                }
+            }
+        }
+        if (bestCard != null) {
+            game.getPlayer().spendGold(bestCard.getPrice());
+            game.getPlayer().addToDeck(bestCard);
+        }
+
+        RelicItem bestRelic = null;
+        int bestRelicScore = Integer.MIN_VALUE;
+        for (RelicItem relic : game.getCurrentBossRelics()) {
+            if (relic.price > game.getPlayer().getGold() || !relic.canPurchase(game)) {
+                continue;
+            }
+            int score = relicScore(relic, game);
+            if (score > bestRelicScore) {
+                bestRelic = relic;
+                bestRelicScore = score;
+            }
+        }
+        if (bestRelic != null && bestRelicScore > 0 && bestRelic.canPurchase(game)
+                && game.getPlayer().spendGold(bestRelic.price)) {
+            bestRelic.applyOnBuy(game.getPlayer(), game);
+            game.addOwnedRelic(bestRelic);
+        }
+    }
+
+    private static int cardScoreForPurchase(Card card) {
+        if (card.getEffect() instanceof DamageEffect damage) return 100 + damage.getDamage();
+        if (card.getEffect() instanceof PoisonEffect) return 90;
+        if (card.getEffect() instanceof HealEffect) return 70;
+        if (card.getEffect() instanceof ShieldEffect) return 65;
+        if (card.getEffect() instanceof BurnEffect) return 60;
+        if (card.getEffect() instanceof FreezeEffect) return 55;
+        return 0;
+    }
+
+    private static int relicScore(RelicItem relic, Game game) {
+        if (relic instanceof PassiveHealRelic) return 100;
+        if (relic instanceof VampireRelic) return 90;
+        if (relic instanceof PassiveShieldRelic) return 80;
+        if (relic instanceof MaxHpRelic) return game.getPlayer().getHp() < game.getPlayer().getMaxHp() ? 85 : 70;
+        if (relic instanceof ThornRelic) return 65;
+        if (relic instanceof ExecutionerRelic) return 60;
+        if (relic instanceof WrathRelic) return 50;
+        if (relic instanceof GoldRushRelic) return 40;
+        return 0;
+    }
+
+    private static void printResult(Result result) {
+        System.out.printf(Locale.ROOT, "Games: %d | Seed: %d | Highest level reached: %d%n",
+            result.games(), result.seed(), result.highestLevelReached());
+        System.out.println("Death rate is conditional: deaths at level / games that reached that level.");
+        System.out.printf("%-8s %12s %10s %14s%n", "Level", "Reached", "Deaths", "Death rate");
+        for (Map.Entry<Integer, LevelStats> entry : result.levels().entrySet()) {
+            LevelStats stats = entry.getValue();
+            double rate = 100.0 * stats.deaths() / stats.entrants();
+            System.out.printf(Locale.ROOT, "%-8d %12d %10d %13.2f%%%n",
+                entry.getKey(), stats.entrants(), stats.deaths(), rate);
+        }
+    }
+
+    public record LevelStats(int entrants, int deaths) {}
+
+    public record Result(int games, long seed, SortedMap<Integer, LevelStats> levels,
+                         int highestLevelReached) {}
+
+    private static final class MutableLevelStats {
+        private int entrants;
+        private int deaths;
+    }
+}
+

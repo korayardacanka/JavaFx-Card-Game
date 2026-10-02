@@ -1,0 +1,42 @@
+package com.koray.relics;
+
+import com.koray.core.Game;
+import com.koray.core.Player;
+
+/**
+ * 😡 Wrath Stone relic.
+ * Grants bonus energy each turn when the player's HP falls below 50%.
+ * Rewards high-risk play — the lower the HP, the more powerful the relic
+ * (via extra energy to play more cards per turn).
+ */
+public class WrathRelic extends RelicItem {
+
+    /** Additional energy granted each turn when HP is below the threshold. */
+    private int bonusEnergy;
+
+    /**
+     * @param bonusEnergy extra energy to add per turn when HP < 50%
+     */
+    public WrathRelic(int bonusEnergy) {
+        super("😡 Wrath Stone",
+              "Gain +" + bonusEnergy + " energy each turn while below 50% HP",
+              50);
+        this.bonusEnergy = bonusEnergy;
+    }
+
+    /**
+     * Called at the start of every player turn.
+     * If the player's current HP is below half their max HP,
+     * raises the current energy by bonusEnergy.
+     *
+     * @param player the active player
+     * @param game   the active game state (unused here)
+     */
+    @Override
+    public void applyPassive(Player player, Game game) {
+        if (player.getHp() < player.getMaxHp() / 2) {
+            player.addEnergy(bonusEnergy);
+        }
+    }
+}
+
