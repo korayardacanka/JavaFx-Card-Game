@@ -2,6 +2,8 @@
 
 A turn-based, deck-building card game built with Java 17+, JavaFX, and Maven. Play cards to deal damage, heal, gain shield, and apply status effects; defeat increasingly powerful enemies, earn gold, and improve your deck and relic collection between battles.
 
+[![CI](https://github.com/korayardacanka/JavaFx-Card-Game/actions/workflows/ci.yml/badge.svg)](https://github.com/korayardacanka/JavaFx-Card-Game/actions/workflows/ci.yml)
+
 ## Preview
 
 Gameplay backgrounds and combat visuals change as you progress through the enemy families. This preview shows one of the biome backgrounds used in the game:
