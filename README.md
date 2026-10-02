@@ -41,6 +41,25 @@ Run the test suite with:
 mvn test
 ```
 
+## Headless simulation
+
+Run 1,000 games with the default deterministic seed:
+
+```bash
+mvn exec:java
+```
+
+Pass a game count and seed to customize the run:
+
+```bash
+mvn exec:java -Dexec.args="1000 42"
+```
+
+The report shows the conditional death rate for each level: deaths at that
+level divided by the number of games that reached it. The simple policy favors
+damage, uses healing and defense when useful, and buys one affordable card and
+the highest-priority affordable boss relic after victories.
+
 ## Design patterns
 
 | Pattern | Role in the game | Main classes |

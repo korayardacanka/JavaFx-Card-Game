@@ -1,6 +1,7 @@
 package com.koray;
 
 import java.util.Collections;
+import java.util.Random;
 
 /**
  * Manages all deck operations for the player.
@@ -12,12 +13,18 @@ import java.util.Collections;
 public class DeckManager {
 
     private final Game game;
+    private final Random random;
 
     /**
      * @param game the active game state (provides access to player piles)
      */
     public DeckManager(Game game) {
+        this(game, new Random());
+    }
+
+    public DeckManager(Game game, Random random) {
         this.game = game;
+        this.random = random;
     }
 
     /**
@@ -36,7 +43,7 @@ public class DeckManager {
             game.player.deck.add(CardFactory.make("Heal",   2, 20, 1, new HealEffect(10)));
         }
 
-        Collections.shuffle(game.player.deck);
+        Collections.shuffle(game.player.deck, random);
     }
 
     /**
@@ -59,7 +66,7 @@ public class DeckManager {
         if (game.player.deck.isEmpty()) {
             game.player.deck.addAll(game.player.discard);
             game.player.discard.clear();
-            Collections.shuffle(game.player.deck);
+            Collections.shuffle(game.player.deck, random);
         }
         if (!game.player.deck.isEmpty()) {
             game.player.hand.add(game.player.deck.remove(0));

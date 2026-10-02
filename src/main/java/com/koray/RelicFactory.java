@@ -22,6 +22,10 @@ public class RelicFactory {
      * @return a list of up to 3 randomly selected, non-owned RelicItem instances
      */
     public static List<RelicItem> bossRelics(int level, List<RelicItem> ownedRelics) {
+        return bossRelics(level, ownedRelics, new Random());
+    }
+
+    public static List<RelicItem> bossRelics(int level, List<RelicItem> ownedRelics, Random random) {
         int tier = (level - 1) / 5;
 
         // Build the names of already-owned relics for fast lookup
@@ -46,7 +50,7 @@ public class RelicFactory {
         // Filter out already-owned relics
         pool.removeIf(r -> ownedNames.contains(r.name));
 
-        Collections.shuffle(pool);
+        Collections.shuffle(pool, random);
         return pool.subList(0, Math.min(3, pool.size()));
     }
 }

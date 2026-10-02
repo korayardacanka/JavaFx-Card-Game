@@ -1,5 +1,6 @@
 package com.koray;
 import java.util.*;
+import java.util.Random;
 
 /**
  * Factory class for creating and scaling cards.
@@ -91,6 +92,10 @@ public class CardFactory {
      * @param player used to check already-owned cards
      */
     public static List<Card> shopCards(int level, Player player) {
+        return shopCards(level, player, new Random());
+    }
+
+    public static List<Card> shopCards(int level, Player player, Random random) {
         // Collect names of cards the player already owns across all piles
         Set<String> owned = new HashSet<>();
         for (Card c : player.deck)    owned.add(c.name);
@@ -113,7 +118,7 @@ public class CardFactory {
         }
 
         List<Card> pool = new ArrayList<>(poolMap.values());
-        Collections.shuffle(pool);
+        Collections.shuffle(pool, random);
         return pool.subList(0, Math.min(4, pool.size()));
     }
 }
