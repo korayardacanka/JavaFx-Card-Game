@@ -13,6 +13,8 @@ import java.util.function.Consumer;
  */
 public class BattleController {
 
+    public static final int HAND_REROLL_COST = 10;
+
     public enum BattleState {
         PLAYER_TURN,
         ENEMY_TURN,
@@ -138,6 +140,32 @@ public class BattleController {
                 onUpdateUI.run();
             });
         }
+    }
+
+    /**
+     * Replaces the current hand with the same number of cards for 10 gold.
+     * The old hand is moved to the discard pile before drawing replacements.
+     */
+    public void handleHandReroll() {
+        if (!canPlayerAct()) return;
+        if (game.player.hand.isEmpty()) {
+            onLog.accept("There are no cards in hand to reroll.");
+            return;
+        }
+        if (!game.player.spendGold(HAND_REROLL_COST)) {
+            onLog.accept("Not enough gold to reroll your hand (10 gold required).");
+            return;
+        }
+
+        int cardsToDraw = game.player.hand.size();
+        game.player.discard.addAll(game.player.hand);
+        game.player.hand.clear();
+        for (int i = 0; i < cardsToDraw; i++) {
+            deckManager.drawSingleCard();
+        }
+
+        onUpdateUI.run();
+        onLog.accept("Hand rerolled for 10 gold.");
     }
 
     // ── Turn processing ───────────────────────────────────────────────────────

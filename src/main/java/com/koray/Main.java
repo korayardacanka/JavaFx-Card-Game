@@ -65,6 +65,7 @@ public class Main extends Application {
 
     private HBox handBox = new HBox(UIConstants.HAND_BOX_SPACING);
     private Button endTurnButton;
+    private Button rerollButton;
 
     // =========================================================================
     @Override
@@ -234,8 +235,17 @@ public class Main extends Application {
                 battleController.handleEndTurn();
             }
         });
+        rerollButton = new Button("Reroll Hand (10 Gold)");
+        rerollButton.setStyle("-fx-font-size:14px; -fx-padding: 6 20;");
+        rerollButton.setOnAction(e -> {
+            if (battleController != null) {
+                battleController.handleHandReroll();
+            }
+        });
+        HBox turnControls = new HBox(10, endTurnButton, rerollButton);
+        turnControls.setAlignment(Pos.CENTER);
 
-        VBox bottomPanel = new VBox(6, handBox, endTurnButton, log);
+        VBox bottomPanel = new VBox(6, handBox, turnControls, log);
         bottomPanel.setAlignment(Pos.CENTER);
         bottomPanel.setPadding(new Insets(8));
         bottomPanel.setStyle("-fx-background-color: rgba(0,0,0,0.55);");
@@ -337,6 +347,11 @@ public class Main extends Application {
         if (!game.lastEvent.isEmpty()) log.setText(game.lastEvent);
         if (endTurnButton != null && battleController != null) {
             endTurnButton.setDisable(!battleController.canPlayerAct());
+        }
+        if (rerollButton != null && battleController != null) {
+            rerollButton.setDisable(!battleController.canPlayerAct()
+                || game.player.hand.isEmpty()
+                || game.player.getGold() < BattleController.HAND_REROLL_COST);
         }
 
         // Show owned relic icons with a tooltip for each relic.

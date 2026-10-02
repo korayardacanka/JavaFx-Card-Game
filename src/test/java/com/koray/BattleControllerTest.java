@@ -41,6 +41,47 @@ public class BattleControllerTest {
     }
 
     @Test
+    public void handRerollCostsTenGoldAndReplacesHandWithSameNumberOfCards() {
+        Game game = new Game();
+        game.enemy = EnemyFactory.createEnemy(1);
+        game.eventBus = new EventBus();
+        for (int i = 0; i < 4; i++) {
+            game.player.hand.add(CardFactory.make("Old " + i, 1, 1, 1, new DamageEffect(1)));
+            game.player.deck.add(CardFactory.make("New " + i, 1, 1, 1, new DamageEffect(1)));
+        }
+        java.util.List<Card> oldHand = new java.util.ArrayList<>(game.player.hand);
+        BattleController controller = createController(game, () -> {});
+
+        controller.handleHandReroll();
+
+        assertEquals(40, game.player.getGold());
+        assertEquals(4, game.player.hand.size());
+        assertEquals(4, game.player.discard.size());
+        assertTrue(game.player.discard.containsAll(oldHand));
+        for (Card card : oldHand) {
+            assertTrue(!game.player.hand.contains(card));
+        }
+    }
+
+    @Test
+    public void handRerollDoesNothingWithoutEnoughGold() {
+        Game game = new Game();
+        game.enemy = EnemyFactory.createEnemy(1);
+        game.eventBus = new EventBus();
+        while (game.player.spendGold(1)) {}
+        Card card = CardFactory.make("Strike", 1, 1, 1, new DamageEffect(1));
+        game.player.hand.add(card);
+        BattleController controller = createController(game, () -> {});
+
+        controller.handleHandReroll();
+
+        assertEquals(0, game.player.getGold());
+        assertEquals(1, game.player.hand.size());
+        assertTrue(game.player.hand.contains(card));
+        assertTrue(game.player.discard.isEmpty());
+    }
+
+    @Test
     public void enemyDeathResetsCombatFlowBackToPlayerTurn() throws Exception {
         Game game = new Game();
         game.player.restoreEnergy(3);
