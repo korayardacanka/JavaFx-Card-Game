@@ -2,6 +2,8 @@ package com.koray;
 
 import org.junit.Test;
 
+import java.util.Random;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -17,5 +19,25 @@ public class HeadlessSimulatorTest {
         assertEquals(25, first.levels().get(1).entrants());
         assertTrue(first.highestLevelReached() >= 1);
         assertTrue(first.levels().containsKey(first.highestLevelReached()));
+    }
+
+    @Test
+    public void playerTurnUsesCombatEngineToResolveCardAndEnemyDeath() {
+        Game game = new Game();
+        game.setEventBus(new EventBus());
+        game.getEventBus().subscribe(new RewardSystem(game));
+        Enemy enemy = EnemyFactory.createEnemy(1);
+        enemy.takeDamage(enemy.getHp() - 1);
+        game.setEnemy(enemy);
+        Card finisher = CardFactory.make("Finisher", 1, 1, 1, new DamageEffect(1));
+        game.getPlayer().addToHand(finisher);
+        CombatEngine engine = new CombatEngine(game, new DeckManager(game, new Random(1)),
+            new CombatListener() {}, new Random(1));
+
+        HeadlessSimulator.playAvailableCards(game, engine);
+
+        assertEquals(2, game.getLevel());
+        assertTrue(game.getPlayer().getDiscard().contains(finisher));
+        assertTrue(engine.canPlayerAct());
     }
 }

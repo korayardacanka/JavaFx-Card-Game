@@ -50,19 +50,20 @@ mvn test
 Run 1,000 games with the default deterministic seed:
 
 ```bash
-mvn exec:java
+mvn exec:java -Dexec.classpathScope=test
 ```
 
 Pass a game count and seed to customize the run:
 
 ```bash
-mvn exec:java -Dexec.args="1000 42"
+mvn exec:java -Dexec.classpathScope=test -Dexec.args="1000 42"
 ```
 
 The report shows the conditional death rate for each level: deaths at that
 level divided by the number of games that reached it. The simple policy favors
 damage, uses healing and defense when useful, and buys one affordable card and
-the highest-priority affordable boss relic after victories.
+the highest-priority affordable boss relic after victories. The simulator lives
+in the test source set and delegates combat rules to `CombatEngine`.
 
 ## Design patterns
 

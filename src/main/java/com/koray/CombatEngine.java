@@ -2,6 +2,7 @@ package com.koray;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
 /** Owns combat rules and state without depending on JavaFX. */
 public final class CombatEngine {
@@ -18,12 +19,19 @@ public final class CombatEngine {
     private final Game game;
     private final DeckManager deckManager;
     private final CombatListener listener;
+    private final Random random;
     private BattleState state = BattleState.PLAYER_TURN;
 
     public CombatEngine(Game game, DeckManager deckManager, CombatListener listener) {
+        this(game, deckManager, listener, new Random());
+    }
+
+    public CombatEngine(Game game, DeckManager deckManager, CombatListener listener,
+                        Random random) {
         this.game = game;
         this.deckManager = deckManager;
         this.listener = listener == null ? new CombatListener() {} : listener;
+        this.random = random;
     }
 
     public BattleState getState() { return state; }
@@ -204,10 +212,11 @@ public final class CombatEngine {
         if (game.getLevel() % 2 == 0) {
             game.increaseMaxEnergy(1);
         }
-        game.setCurrentShopCards(CardFactory.shopCards(game.getLevel(), game.getPlayer()));
+        game.setCurrentShopCards(
+            CardFactory.shopCards(game.getLevel(), game.getPlayer(), random));
         if (dead.isBoss()) {
             game.setCurrentBossRelics(
-                RelicFactory.bossRelics(game.getLevel(), game.getOwnedRelics()));
+                RelicFactory.bossRelics(game.getLevel(), game.getOwnedRelics(), random));
         } else {
             game.clearCurrentBossRelics();
         }

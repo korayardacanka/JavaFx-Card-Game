@@ -55,6 +55,7 @@
         <version>3.5.0</version>
         <configuration>
           <mainClass>com.koray.HeadlessSimulator</mainClass>
+          <classpathScope>test</classpathScope>
         </configuration>
       </plugin>
     </plugins>
